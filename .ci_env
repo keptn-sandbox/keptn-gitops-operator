@@ -1,2 +1,2 @@
-DOCKER_ORGANIZATION="keptnsandbox"
+DOCKER_ORGANIZATION="keptncontrib"
 IMAGE="keptn-gitops-operator"
