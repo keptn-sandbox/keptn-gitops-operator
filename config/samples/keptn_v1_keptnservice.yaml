@@ -1,0 +1,7 @@
+apiVersion: keptn.operator.keptn.sh/v1
+kind: KeptnService
+metadata:
+  name: keptnservice-sample
+spec:
+  # Add fields here
+  foo: bar
