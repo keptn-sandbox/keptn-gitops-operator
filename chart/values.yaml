@@ -1,0 +1,39 @@
+apiUrl: "http://api-gateway-nginx/api"
+
+image:
+  repository: docker.io/keptn/keptn-gitops-operator # Container Image Name
+  pullPolicy: IfNotPresent                 # Kubernetes Image Pull Policy
+  tag: ""
+
+serviceAccount:
+  create: true                               # Enables the service account creation
+  annotations: {}                            # Annotations to add to the service account
+  name: ""                                   # The name of the service account to use.
+
+podAnnotations: {}                           # Annotations to add to the created pods
+
+podSecurityContext: {}                       # Set the pod security context (e.g. fsGroups)
+  # fsGroup: 2000
+
+securityContext: {}                          # Set the security context (e.g. runAsUser)
+#  readOnlyRootFilesystem: true
+#  runAsNonRoot: true
+#  runAsUser: 1000
+
+resources: {}                                 # Resource limits and requests
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}                                # Node selector configuration
+
+tolerations: []                                 # Tolerations for the pods
+
+affinity: {}                                    # Affinity rules
