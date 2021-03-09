@@ -179,7 +179,6 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	}
 
 	project.Status.LastMainCommit = mainHead
-	r.ReqLogger.Info("State has changed")
 
 	if project.Status.WatchedBranch != "" {
 		appCommitHash, err := r.getCommitHash(credentials, project.Status.WatchedBranch)
