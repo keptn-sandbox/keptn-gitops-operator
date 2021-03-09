@@ -5,6 +5,7 @@ on:
     branches:
       - 'master'
       - 'release-*'
+      - 'init'
   # in addition, execute for pull requests to those branches
   pull_request:
     branches:
