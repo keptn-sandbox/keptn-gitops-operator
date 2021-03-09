@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
@@ -34,7 +33,7 @@ import (
 	"path/filepath"
 	"time"
 
-	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -82,6 +81,7 @@ type KeptnProjectReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+	ReqLogger logr.Logger
 }
 
 // +kubebuilder:rbac:groups=keptn.operator.keptn.sh,resources=keptnprojects,verbs=get;list;watch;create;update;patch;delete
@@ -91,13 +91,13 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	_ = context.Background()
 	_ = r.Log.WithValues("keptnproject", req.NamespacedName)
 
-	reqLogger := r.Log.WithValues("Request.Namespace", req.Namespace, "Request.Name", req.Name)
-	reqLogger.Info("Reconciling KeptnProject")
+	r.ReqLogger = r.Log.WithValues("Request.Namespace", req.Namespace, "Request.Name", req.Name)
+	r.ReqLogger.Info("Reconciling KeptnProject")
 
 	project := &keptnv1.KeptnProject{}
 	err := r.Client.Get(context.TODO(), req.NamespacedName, project)
 	if errors.IsNotFound(err) {
-		reqLogger.Info("KeptnProject resource not found. Ignoring since object must be deleted")
+		r.ReqLogger.Info("KeptnProject resource not found. Ignoring since object must be deleted")
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
@@ -110,7 +110,7 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
-	mainHead, err := getCommitHash(credentials, "")
+	mainHead, err := r.getCommitHash(credentials, "")
 	if err != nil {
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
@@ -131,7 +131,7 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		SingleBranch: true,
 	})
 	if err != nil {
-		reqLogger.Error(err, "Could not checkout " + project.Name)
+		r.ReqLogger.Error(err, "Could not checkout " + project.Name)
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
@@ -150,18 +150,18 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		for _, service := range config.Services {
 			err = r.createKeptnService(project.Name, service, req.Namespace)
 			if err != nil {
-				reqLogger.Error(err, "Could not create service " + project.Name + "/" + service.Name)
+				r.ReqLogger.Error(err, "Could not create service " + project.Name + "/" + service.Name)
 				return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 			}
 		}
 	} else {
-		reqLogger.Info("There is no configuration file for project " + project.Name)
+		r.ReqLogger.Info("There is no configuration file for project " + project.Name)
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
 	defer os.RemoveAll(dir)
 
-	for _, service := range r.getKeptnServices(req.Namespace).Items {
+	for _, service := range r.getKeptnServices().Items {
 		found := false
 		for _, configService := range config.Services {
 			if service.Spec.Project == project.Name && service.Spec.Service == configService.Name {
@@ -169,24 +169,32 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 			}
 		}
 		if found == false {
-			r.removeService(project.Name, service.Spec.Service, req.Namespace)
+			err = r.removeService(project.Name, service.Spec.Service, req.Namespace)
+			if err != nil {
+				r.ReqLogger.Error(err, "Could not remove Service " + service.Spec.Service)
+				return ctrl.Result{RequeueAfter: 30 * time.Second}, err
+			}
 
 		}
 	}
 
 	project.Status.LastMainCommit = mainHead
-	reqLogger.Info("State has changed")
+	r.ReqLogger.Info("State has changed")
 
 	if project.Status.WatchedBranch != "" {
-		appCommitHash, err := getCommitHash(credentials, project.Status.WatchedBranch)
+		appCommitHash, err := r.getCommitHash(credentials, project.Status.WatchedBranch)
 		if err != nil {
-			return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+			return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 		}
 
 		if project.Status.LastDeployCommit != appCommitHash {
-			reqLogger.Info("App Branch State has changed - Triggering new Deployment")
+			r.ReqLogger.Info("App Branch State has changed - Triggering new Deployment")
 			for _, service := range config.Services {
-				r.triggerDeployment(project.Name, service, config.Metadata.Branch, req.Namespace)
+				err := r.triggerDeployment(project.Name, service, config.Metadata.Branch, req.Namespace)
+				if err != nil {
+					r.ReqLogger.Error(err, "Could not trigger deployment " + service.Name)
+					return ctrl.Result{RequeueAfter: 30 * time.Second}, err
+				}
 			}
 			project.Status.LastDeployCommit = appCommitHash
 		}
@@ -194,11 +202,11 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	err = r.Client.Update(context.TODO(), project)
 	if err != nil {
-		reqLogger.Error(err, "Could not update LastAppCommit")
+		r.ReqLogger.Error(err, "Could not update LastAppCommit")
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
-	fmt.Println("Finished Reconciling")
+	r.ReqLogger.Info("Finished Reconciling")
 
 	return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 }
@@ -233,7 +241,7 @@ func (r *KeptnProjectReconciler) createKeptnService(project string, service Kept
 	return nil
 }
 
-func (r *KeptnProjectReconciler) triggerDeployment(project string, service KeptnService, stage string, namespace string) {
+func (r *KeptnProjectReconciler) triggerDeployment(project string, service KeptnService, stage string, namespace string) error {
 
 	keptnService := keptnv1.KeptnService{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: project + "-" + service.Name, Namespace: namespace}, &keptnService)
@@ -243,38 +251,43 @@ func (r *KeptnProjectReconciler) triggerDeployment(project string, service Keptn
 
 	err = r.Client.Update(context.TODO(), &keptnService)
 	if err != nil {
-		log.Fatalln(err, "Could not update KeptnService")
+		r.ReqLogger.Error(err, "Could not update KeptnService " + service.Name)
+		return err
 	} else {
-		fmt.Println("Updated Service")
+		r.ReqLogger.Info("Updated Service")
 	}
+	return nil
 }
 
-func (r *KeptnProjectReconciler) removeService(project string, service string, namespace string) {
+func (r *KeptnProjectReconciler) removeService(project string, service string, namespace string) error {
 
 	keptnService := keptnv1.KeptnService{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: project + "-" + service, Namespace: namespace}, &keptnService)
 
 	if keptnService.Status.SafeToDelete == true {
 		err = r.Client.Delete(context.TODO(), &keptnService)
-		if err == nil {
-			fmt.Println("Deletion of " + keptnService.Name + " was successful")
-			return
+		if err != nil {
+			r.ReqLogger.Error(err, "Deletion of "+keptnService.Name+" was unsuccessful")
+			return err
+		} else {
+			r.ReqLogger.Info("Deletion of " + keptnService.Name + " was successful")
+			return nil
 		}
 	}
 
 	keptnService.Status.DeletionPending = true
-
 	err = r.Client.Update(context.TODO(), &keptnService)
 	if err != nil {
-		log.Fatalln(err, "Could not update KeptnService")
+		r.ReqLogger.Error(err, "Could not update KeptnService " + keptnService.Name)
+		return err
 	} else {
-		fmt.Println("Updated Service")
+		r.ReqLogger.Info("Updated Service " + keptnService.Name)
 	}
+	return nil
 }
 
-func getCommitHash(credentials GitCredentials, branch string) (string, error) {
+func (r *KeptnProjectReconciler) getCommitHash(credentials GitCredentials, branch string) (string, error) {
 
-	fmt.Println(branch)
 	authentication := &http.BasicAuth{
 		Username: credentials.User,
 		Password: credentials.Token,
@@ -295,24 +308,25 @@ func getCommitHash(credentials GitCredentials, branch string) (string, error) {
 
 	repo, err := git.Clone(memory.NewStorage(), nil, &cloneOptions)
 	if err != nil {
-		fmt.Println(err)
+		r.ReqLogger.Error(err, "Could not clone repository " + credentials.RemoteURI)
 		return "", err
 	}
 
 	head, err := repo.Head()
 	if err != nil {
-		fmt.Println(err)
+		r.ReqLogger.Error(err, "Could get head for " + credentials.RemoteURI)
 		return "", err
 	}
 	return head.Hash().String(), nil
 }
 
-func (r *KeptnProjectReconciler) getKeptnServices(namespace string) keptnv1.KeptnServiceList {
+func (r *KeptnProjectReconciler) getKeptnServices() keptnv1.KeptnServiceList {
 	var keptnServiceList keptnv1.KeptnServiceList
 
 	err := r.Client.List(context.TODO(), &keptnServiceList)
 	if err != nil {
-		fmt.Println(err)
+		r.ReqLogger.Error(err, "Could not get keptn services")
+		return keptnServiceList
 	}
 	return keptnServiceList
 }

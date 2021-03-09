@@ -27,7 +27,6 @@ import (
 	"log"
 	nethttp "net/http"
 	"os"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -58,7 +57,7 @@ func (r *KeptnServiceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	var ok bool
 	r.keptnApi, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
 	if !ok {
-		fmt.Println("KEPTN_API_ENDPOINT is not present, defaulting to api-gateway-nginx")
+		reqLogger.Info("KEPTN_API_ENDPOINT is not present, defaulting to api-gateway-nginx")
 		r.keptnApi = "http://api-gateway-nginx/api"
 	}
 
@@ -66,18 +65,19 @@ func (r *KeptnServiceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	err := r.Client.Get(context.TODO(), req.NamespacedName, service)
 	if errors.IsNotFound(err) {
 		reqLogger.Info("KeptnProject resource not found. Ignoring since object must be deleted")
-		return reconcile.Result{}, nil
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
 	service.Status.LastSetupStatus, err = r.createService(service.Spec.Service, req.Namespace, service.Spec.Project)
 	if err != nil {
-		fmt.Println("Service could not be created")
+		reqLogger.Error(err,"Could not create service "+ service.Spec.Service)
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
 	if service.Status.DeploymentPending {
 		err = r.triggerDeployment(service.Spec.Service, req.Namespace, service.Spec.Project, service.Spec.StartStage, service.Spec.TriggerCommand)
 		if err != nil {
-			return ctrl.Result{RequeueAfter: 60 * time.Second}, nil
+			return ctrl.Result{RequeueAfter: 60 * time.Second}, err
 		}
 		service.Status.DeploymentPending = false
 	}
@@ -85,7 +85,7 @@ func (r *KeptnServiceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	if service.Status.DeletionPending {
 		err = r.deleteService(service.Spec.Service, req.Namespace, service.Spec.Project)
 		if err != nil {
-			return ctrl.Result{RequeueAfter: 60 * time.Second}, nil
+			return ctrl.Result{RequeueAfter: 60 * time.Second}, err
 		}
 		service.Status.SafeToDelete = true
 	}
