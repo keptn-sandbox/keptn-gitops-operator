@@ -32,7 +32,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"time"
 
 	git "github.com/go-git/go-git/v5"
@@ -99,7 +98,7 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	err := r.Client.Get(context.TODO(), req.NamespacedName, project)
 	if errors.IsNotFound(err) {
 		reqLogger.Info("KeptnProject resource not found. Ignoring since object must be deleted")
-		return reconcile.Result{}, nil
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
 	secret := &corev1.Secret{}
@@ -108,12 +107,12 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	var credentials GitCredentials
 	err = json.Unmarshal(secret.Data["git-credentials"], &credentials)
 	if err != nil {
-		log.Fatal("Could not unmarshal secret")
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
 	mainHead, err := getCommitHash(credentials, "")
 	if err != nil {
-		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
 	config := &KeptnConfig{}
@@ -123,7 +122,7 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	// GET Configuration
 	dir, _ := ioutil.TempDir("", "temp_dir")
 
-	_, _ = git.PlainClone(dir, false, &git.CloneOptions{
+	_, err = git.PlainClone(dir, false, &git.CloneOptions{
 		URL: credentials.RemoteURI,
 		Auth: &http.BasicAuth{
 			Username: credentials.User,
@@ -131,24 +130,33 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		},
 		SingleBranch: true,
 	})
+	if err != nil {
+		reqLogger.Error(err, "Could not checkout " + project.Name)
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	}
 
 	if _, err := os.Stat(filepath.Join(dir, ".keptn/config.yaml")); err == nil {
 		yamlFile, err := ioutil.ReadFile(filepath.Join(dir, ".keptn/config.yaml"))
 		if err != nil {
-			log.Printf("yamlFile.Get err   #%v ", err)
+			return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 		}
 		err = yaml.Unmarshal(yamlFile, config)
 		if err != nil {
-			log.Fatal(err)
+			return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 		}
 
 		project.Status.WatchedBranch = config.Metadata.Branch
 
 		for _, service := range config.Services {
-			r.createKeptnService(project.Name, service, req.Namespace)
+			err = r.createKeptnService(project.Name, service, req.Namespace)
+			if err != nil {
+				reqLogger.Error(err, "Could not create service " + project.Name + "/" + service.Name)
+				return ctrl.Result{RequeueAfter: 30 * time.Second}, err
+			}
 		}
 	} else {
-		fmt.Println("There is no config for project " + project.Name)
+		reqLogger.Info("There is no configuration file for project " + project.Name)
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
 	defer os.RemoveAll(dir)
@@ -157,8 +165,6 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		found := false
 		for _, configService := range config.Services {
 			if service.Spec.Project == project.Name && service.Spec.Service == configService.Name {
-				fmt.Println(service.Spec.Service)
-				fmt.Println(configService.Name)
 				found = true
 			}
 		}
@@ -203,7 +209,7 @@ func (r *KeptnProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *KeptnProjectReconciler) createKeptnService(project string, service KeptnService, namespace string) {
+func (r *KeptnProjectReconciler) createKeptnService(project string, service KeptnService, namespace string) error {
 	currentKService := keptnv1.KeptnService{}
 	kService := keptnv1.KeptnService{
 		ObjectMeta: metav1.ObjectMeta{
@@ -221,9 +227,10 @@ func (r *KeptnProjectReconciler) createKeptnService(project string, service Kept
 		log.Println("Creating a new " + service.Name + "Service")
 		err = r.Client.Create(context.TODO(), &kService)
 		if err != nil {
-			log.Fatalln(err)
+			return err
 		}
 	}
+	return nil
 }
 
 func (r *KeptnProjectReconciler) triggerDeployment(project string, service KeptnService, stage string, namespace string) {
