@@ -94,34 +94,34 @@ jobs:
   ############################################################################
   # Unit tests                                                               #
   ############################################################################
-  unit-tests:
-    name: Unit Tests
-    needs: prepare_ci_run
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Set up Go 1.x
-        uses: actions/setup-go@v2
-        with:
-          go-version: ^1.13
-      - name: Checkout Code
-        uses: actions/checkout@v2
-
-      - name: Load CI Environment from .ci_env
-        id: load_ci_env
-        uses: c-py/action-dotenv-to-setenv@v2
-        with:
-          env-file: .ci_env
-
-      - name: Test
-        run: go test -coverprofile=coverage.txt -covermode=atomic -v ./...
-        working-directory: .
+  # unit-tests:
+  #  name: Unit Tests
+  #  needs: prepare_ci_run
+  #  runs-on: ubuntu-20.04
+  #  steps:
+  #    - name: Set up Go 1.x
+  #      uses: actions/setup-go@v2
+  #      with:
+  #        go-version: ^1.13
+  #    - name: Checkout Code
+  #      uses: actions/checkout@v2
+  #
+  #    - name: Load CI Environment from .ci_env
+  #      id: load_ci_env
+  #      uses: c-py/action-dotenv-to-setenv@v2
+  #      with:
+  #        env-file: .ci_env
+  #
+  #    - name: Test
+  #      run: go test -coverprofile=coverage.txt -covermode=atomic -v ./...
+  #      working-directory: .
 
 
   ############################################################################
   # Build Docker Image                                                      #
   ############################################################################
   docker_build:
-    needs: [prepare_ci_run, unit-tests]
+    needs: [prepare_ci_run]
     name: Docker Build
     runs-on: ubuntu-20.04
     env:
