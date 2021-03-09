@@ -79,8 +79,8 @@ type KeptnEventData struct {
 // KeptnProjectReconciler reconciles a KeptnProject object
 type KeptnProjectReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log       logr.Logger
+	Scheme    *runtime.Scheme
 	ReqLogger logr.Logger
 }
 
@@ -131,7 +131,7 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		SingleBranch: true,
 	})
 	if err != nil {
-		r.ReqLogger.Error(err, "Could not checkout " + project.Name)
+		r.ReqLogger.Error(err, "Could not checkout "+project.Name)
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
@@ -150,7 +150,7 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		for _, service := range config.Services {
 			err = r.createKeptnService(project.Name, service, req.Namespace)
 			if err != nil {
-				r.ReqLogger.Error(err, "Could not create service " + project.Name + "/" + service.Name)
+				r.ReqLogger.Error(err, "Could not create service "+project.Name+"/"+service.Name)
 				return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 			}
 		}
@@ -171,7 +171,7 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		if found == false {
 			err = r.removeService(project.Name, service.Spec.Service, req.Namespace)
 			if err != nil {
-				r.ReqLogger.Error(err, "Could not remove Service " + service.Spec.Service)
+				r.ReqLogger.Error(err, "Could not remove Service "+service.Spec.Service)
 				return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 			}
 
@@ -192,7 +192,7 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 			for _, service := range config.Services {
 				err := r.triggerDeployment(project.Name, service, config.Metadata.Branch, req.Namespace)
 				if err != nil {
-					r.ReqLogger.Error(err, "Could not trigger deployment " + service.Name)
+					r.ReqLogger.Error(err, "Could not trigger deployment "+service.Name)
 					return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 				}
 			}
@@ -251,7 +251,7 @@ func (r *KeptnProjectReconciler) triggerDeployment(project string, service Keptn
 
 	err = r.Client.Update(context.TODO(), &keptnService)
 	if err != nil {
-		r.ReqLogger.Error(err, "Could not update KeptnService " + service.Name)
+		r.ReqLogger.Error(err, "Could not update KeptnService "+service.Name)
 		return err
 	} else {
 		r.ReqLogger.Info("Updated Service")
@@ -278,7 +278,7 @@ func (r *KeptnProjectReconciler) removeService(project string, service string, n
 	keptnService.Status.DeletionPending = true
 	err = r.Client.Update(context.TODO(), &keptnService)
 	if err != nil {
-		r.ReqLogger.Error(err, "Could not update KeptnService " + keptnService.Name)
+		r.ReqLogger.Error(err, "Could not update KeptnService "+keptnService.Name)
 		return err
 	} else {
 		r.ReqLogger.Info("Updated Service " + keptnService.Name)
@@ -308,13 +308,13 @@ func (r *KeptnProjectReconciler) getCommitHash(credentials GitCredentials, branc
 
 	repo, err := git.Clone(memory.NewStorage(), nil, &cloneOptions)
 	if err != nil {
-		r.ReqLogger.Error(err, "Could not clone repository " + credentials.RemoteURI)
+		r.ReqLogger.Error(err, "Could not clone repository "+credentials.RemoteURI)
 		return "", err
 	}
 
 	head, err := repo.Head()
 	if err != nil {
-		r.ReqLogger.Error(err, "Could get head for " + credentials.RemoteURI)
+		r.ReqLogger.Error(err, "Could get head for "+credentials.RemoteURI)
 		return "", err
 	}
 	return head.Hash().String(), nil

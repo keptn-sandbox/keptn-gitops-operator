@@ -20,11 +20,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"log"
 	nethttp "net/http"
 	"os"
 	"time"
@@ -40,9 +38,10 @@ import (
 // KeptnServiceReconciler reconciles a KeptnService object
 type KeptnServiceReconciler struct {
 	client.Client
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-	keptnApi string
+	Log       logr.Logger
+	Scheme    *runtime.Scheme
+	keptnApi  string
+	ReqLogger logr.Logger
 }
 
 // +kubebuilder:rbac:groups=keptn.operator.keptn.sh,resources=keptnservices,verbs=get;list;watch;create;update;patch;delete
@@ -51,26 +50,26 @@ type KeptnServiceReconciler struct {
 func (r *KeptnServiceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 
-	reqLogger := r.Log.WithValues("Request.Namespace", req.Namespace, "Request.Name", req.Name)
-	reqLogger.Info("Reconciling KeptnService")
+	r.ReqLogger = r.Log.WithValues("Request.Namespace", req.Namespace, "Request.Name", req.Name)
+	r.ReqLogger.Info("Reconciling KeptnService")
 
 	var ok bool
 	r.keptnApi, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
 	if !ok {
-		reqLogger.Info("KEPTN_API_ENDPOINT is not present, defaulting to api-gateway-nginx")
+		r.ReqLogger.Info("KEPTN_API_ENDPOINT is not present, defaulting to api-gateway-nginx")
 		r.keptnApi = "http://api-gateway-nginx/api"
 	}
 
 	service := &keptnv1.KeptnService{}
 	err := r.Client.Get(context.TODO(), req.NamespacedName, service)
 	if errors.IsNotFound(err) {
-		reqLogger.Info("KeptnProject resource not found. Ignoring since object must be deleted")
+		r.ReqLogger.Info("KeptnProject resource not found. Ignoring since object must be deleted")
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
 	service.Status.LastSetupStatus, err = r.createService(service.Spec.Service, req.Namespace, service.Spec.Project)
 	if err != nil {
-		reqLogger.Error(err,"Could not create service "+ service.Spec.Service)
+		r.ReqLogger.Error(err, "Could not create service "+service.Spec.Service)
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
@@ -92,10 +91,9 @@ func (r *KeptnServiceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	err = r.Client.Update(context.TODO(), service)
 	if err != nil {
-		reqLogger.Error(err, "Could not update Service")
+		r.ReqLogger.Error(err, "Could not update Service")
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
-
 	return ctrl.Result{RequeueAfter: 180 * time.Second}, nil
 }
 
@@ -120,13 +118,14 @@ func (r *KeptnServiceReconciler) createService(service string, namespace string,
 	secret := string(keptnToken.Data["keptn-api-token"])
 	request, err := nethttp.NewRequest("POST", r.keptnApi+"/controlPlane/v1/project/"+project+"/service", bytes.NewBuffer(data))
 	if err != nil {
-		log.Fatalln(err)
+		r.ReqLogger.Error(err, "Could not create service "+service)
+		return 0, err
 	}
 
 	request.Header.Set("content-type", "application/json")
 	request.Header.Set("x-token", secret)
 
-	log.Println("Creating Service in Keptn" + service)
+	r.ReqLogger.Info("Creating Service in Keptn" + service)
 	response, err := httpclient.Do(request)
 	if err != nil {
 		return 0, err
@@ -145,13 +144,13 @@ func (r *KeptnServiceReconciler) deleteService(service string, namespace string,
 	secret := string(keptnToken.Data["keptn-api-token"])
 	request, err := nethttp.NewRequest("DELETE", r.keptnApi+"/controlPlane/v1/project/"+project+"/service/"+service, bytes.NewBuffer(nil))
 	if err != nil {
-		log.Fatalln(err)
+		r.ReqLogger.Error(err, "Could not delete service "+service)
 	}
 
 	request.Header.Set("content-type", "application/json")
 	request.Header.Set("x-token", secret)
 
-	log.Println("Deleting Keptn Service " + service)
+	r.ReqLogger.Info("Deleting Keptn Service " + service)
 	_, err = httpclient.Do(request)
 	if err != nil {
 		return err
@@ -182,17 +181,20 @@ func (r *KeptnServiceReconciler) triggerDeployment(service string, namespace str
 
 	secret := string(keptnToken.Data["keptn-api-token"])
 
-	log.Println("Triggering Deployment " + service)
+	r.ReqLogger.Info("Triggering Deployment " + service)
 	request, err := nethttp.NewRequest("POST", r.keptnApi+"/v1/event", bytes.NewBuffer(data))
 	if err != nil {
-		log.Fatalln(err)
+		r.ReqLogger.Error(err, "Could not trigger deployment "+service)
+		return err
 	}
 
 	request.Header.Set("content-type", "application/cloudevents+json")
 	request.Header.Set("x-token", secret)
 
-	response, err := httpclient.Do(request)
+	_, err = httpclient.Do(request)
+	if err != nil {
+		return err
+	}
 
-	fmt.Println(response)
 	return err
 }
