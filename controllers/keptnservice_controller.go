@@ -74,14 +74,22 @@ func (r *KeptnServiceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	}
 
 	if service.Status.DeploymentPending {
+		r.ReqLogger.Info("Deployment is pending")
 		err = r.triggerDeployment(service.Spec.Service, req.Namespace, service.Spec.Project, service.Spec.StartStage, service.Spec.TriggerCommand)
 		if err != nil {
 			return ctrl.Result{RequeueAfter: 60 * time.Second}, err
 		}
 		service.Status.DeploymentPending = false
+		err = r.Client.Update(context.TODO(), service)
+		if err != nil {
+			r.ReqLogger.Error(err, "Could not update Service")
+			return ctrl.Result{RequeueAfter: 30 * time.Second}, err
+		}
+		return ctrl.Result{}, nil
 	}
 
 	if service.Status.DeletionPending {
+		r.ReqLogger.Info("Deletion is pending")
 		err = r.deleteService(service.Spec.Service, req.Namespace, service.Spec.Project)
 		if err != nil {
 			return ctrl.Result{RequeueAfter: 60 * time.Second}, err
@@ -94,6 +102,9 @@ func (r *KeptnServiceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		r.ReqLogger.Error(err, "Could not update Service")
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
+
+	r.ReqLogger.Info("Finished Reconciling")
+
 	return ctrl.Result{RequeueAfter: 180 * time.Second}, nil
 }
 
@@ -125,7 +136,7 @@ func (r *KeptnServiceReconciler) createService(service string, namespace string,
 	request.Header.Set("content-type", "application/json")
 	request.Header.Set("x-token", secret)
 
-	r.ReqLogger.Info("Creating Service in Keptn" + service)
+	r.ReqLogger.Info("Creating Keptn Service " + service)
 	response, err := httpclient.Do(request)
 	if err != nil {
 		return 0, err
