@@ -67,10 +67,12 @@ func (r *KeptnServiceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
-	service.Status.LastSetupStatus, err = r.createService(service.Spec.Service, req.Namespace, service.Spec.Project)
-	if err != nil {
-		r.ReqLogger.Error(err, "Could not create service "+service.Spec.Service)
-		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
+	if !r.checkKeptnServiceExists(service, req.Namespace) {
+		service.Status.LastSetupStatus, err = r.createService(service.Spec.Service, req.Namespace, service.Spec.Project)
+		if err != nil {
+			r.ReqLogger.Error(err, "Could not create service "+service.Spec.Service)
+			return ctrl.Result{RequeueAfter: 30 * time.Second}, err
+		}
 	}
 
 	if service.Status.DeploymentPending {
@@ -208,4 +210,25 @@ func (r *KeptnServiceReconciler) triggerDeployment(service string, namespace str
 	}
 
 	return err
+}
+
+func (r *KeptnServiceReconciler) checkKeptnServiceExists(service *keptnv1.KeptnService, namespace string) bool {
+	httpclient := nethttp.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	keptnToken := &corev1.Secret{}
+	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: "keptn-api-token", Namespace: namespace}, keptnToken)
+	secret := string(keptnToken.Data["keptn-api-token"])
+
+	request, err := nethttp.NewRequest("GET", r.keptnApi+"/configuration-service/v1/project/"+service.Spec.Project+"/stage/"+service.Spec.StartStage+"/service/"+service.Spec.Service+"/resource", bytes.NewBuffer(nil))
+	request.Header.Set("x-token", secret)
+
+	response, err := httpclient.Do(request)
+	if err != nil || response.StatusCode != 200 {
+		return false
+	}
+	r.ReqLogger.Info("Keptn Service already exists: " + service.Name)
+	return true
+
 }
