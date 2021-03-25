@@ -44,6 +44,7 @@ type KeptnServiceStatus struct {
 	SafeToDelete      bool   `json:"safetodelete,omitempty"`
 	Hash              string `json:"hash,omitempty"`
 	DesiredVersion    string `json:"desiredversion,omitempty"`
+	CreationPending   bool   `json:"creationpending,omitempty"`
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 }
