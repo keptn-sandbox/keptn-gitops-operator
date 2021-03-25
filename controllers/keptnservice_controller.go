@@ -20,12 +20,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
 	nethttp "net/http"
 	"os"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -67,12 +68,13 @@ func (r *KeptnServiceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
-	if !r.checkKeptnServiceExists(service, req.Namespace) {
+	if service.Status.CreationPending && !r.checkKeptnServiceExists(service, req.Namespace) {
 		service.Status.LastSetupStatus, err = r.createService(service.Spec.Service, req.Namespace, service.Spec.Project)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not create service "+service.Spec.Service)
 			return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 		}
+		service.Status.CreationPending = false
 	}
 
 	if service.Status.DeploymentPending {

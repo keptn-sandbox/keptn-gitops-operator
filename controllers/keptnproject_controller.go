@@ -19,21 +19,22 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
 	hashdir "github.com/sger/go-hashdir"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"log"
-	"os"
-	"path/filepath"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-logr/logr"
@@ -241,6 +242,9 @@ func (r *KeptnProjectReconciler) createKeptnService(project *keptnv1.KeptnProjec
 			Project:        project.Name,
 			Service:        service.Name,
 			TriggerCommand: service.DeploymentTrigger,
+		},
+		Status: keptnv1.KeptnServiceStatus{
+			CreationPending: true,
 		},
 	}
 
