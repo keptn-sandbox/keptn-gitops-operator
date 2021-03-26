@@ -52,6 +52,10 @@ spec:
               type: boolean
             deloymentpending:
               type: boolean
+            desiredversion:
+              type: string
+            hash:
+              type: string
             lastdeployed:
               type: string
             lastsetupstate:
