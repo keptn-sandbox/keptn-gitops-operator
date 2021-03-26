@@ -77,7 +77,7 @@ func (r *KeptnServiceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	if service.Status.DeploymentPending {
 		r.ReqLogger.Info("Deployment is pending")
-		err = r.triggerDeployment(service.Spec.Service, req.Namespace, service.Spec.Project, service.Spec.StartStage, service.Spec.TriggerCommand)
+		err = r.triggerDeployment(service.Spec.Service, req.Namespace, service.Spec.Project, service.Spec.StartStage, service.Spec.TriggerCommand, service.Status.DesiredVersion)
 		if err != nil {
 			return ctrl.Result{RequeueAfter: 60 * time.Second}, err
 		}
@@ -171,10 +171,16 @@ func (r *KeptnServiceReconciler) deleteService(service string, namespace string,
 	return err
 }
 
-func (r *KeptnServiceReconciler) triggerDeployment(service string, namespace string, project string, stage string, trigger string) error {
+func (r *KeptnServiceReconciler) triggerDeployment(service string, namespace string, project string, stage string, trigger string, version string) error {
 
 	httpclient := nethttp.Client{
 		Timeout: 30 * time.Second,
+	}
+
+	labels := make(map[string]string)
+
+	if version != "" {
+		labels["version"] = version
 	}
 
 	data, err := json.Marshal(KeptnTriggerEvent{
@@ -183,6 +189,7 @@ func (r *KeptnServiceReconciler) triggerDeployment(service string, namespace str
 			Service: service,
 			Project: project,
 			Stage:   stage,
+			Labels:  labels,
 		},
 		Source:      "Keptn GitOps Operator",
 		SpecVersion: "1.0",

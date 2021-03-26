@@ -73,17 +73,27 @@ type KeptnTriggerEvent struct {
 }
 
 type KeptnEventData struct {
-	Project string `json:"project,omitempty"`
-	Service string `json:"service,omitempty"`
-	Stage   string `json:"stage,omitempty"`
+	Project string            `json:"project,omitempty"`
+	Service string            `json:"service,omitempty"`
+	Stage   string            `json:"stage,omitempty"`
+	Labels  map[string]string `json:"labels,omitempty"`
+}
+
+type DeploymentConfig struct {
+	Metadata DeploymentConfigMeta `yaml:"metadata,omitempty"`
+}
+
+type DeploymentConfigMeta struct {
+	ImageVersion string `yaml:"imageVersion,omitempty"`
 }
 
 // KeptnProjectReconciler reconciles a KeptnProject object
 type KeptnProjectReconciler struct {
 	client.Client
-	Log       logr.Logger
-	Scheme    *runtime.Scheme
-	ReqLogger logr.Logger
+	Log              logr.Logger
+	Scheme           *runtime.Scheme
+	ReqLogger        logr.Logger
+	KeptnCredentials GitCredentials
 }
 
 // +kubebuilder:rbac:groups=keptn.operator.keptn.sh,resources=keptnprojects,verbs=get;list;watch;create;update;patch;delete
@@ -109,14 +119,13 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
-	var credentials GitCredentials
-	err = json.Unmarshal(secret.Data["git-credentials"], &credentials)
+	err = json.Unmarshal(secret.Data["git-credentials"], &r.KeptnCredentials)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not unmarshal credentials for project "+project.Name)
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
-	mainHead, err := r.getCommitHash(credentials, "")
+	mainHead, err := r.getCommitHash("")
 	if err != nil {
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
@@ -129,10 +138,10 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	dir, _ := ioutil.TempDir("", "temp_dir")
 
 	_, err = git.PlainClone(dir, false, &git.CloneOptions{
-		URL: credentials.RemoteURI,
+		URL: r.KeptnCredentials.RemoteURI,
 		Auth: &http.BasicAuth{
-			Username: credentials.User,
-			Password: credentials.Token,
+			Username: r.KeptnCredentials.User,
+			Password: r.KeptnCredentials.Token,
 		},
 		SingleBranch: true,
 	})
@@ -187,7 +196,7 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	project.Status.LastMainCommit = mainHead
 
 	if project.Status.WatchedBranch != "" {
-		appCommitHash, err := r.getCommitHash(credentials, project.Status.WatchedBranch)
+		appCommitHash, err := r.getCommitHash(project.Status.WatchedBranch)
 		if err != nil {
 			return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 		}
@@ -195,7 +204,7 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		if project.Status.LastDeployCommit != appCommitHash {
 			r.ReqLogger.Info("App Branch State has changed - Triggering new Deployment")
 			for _, service := range config.Services {
-				hash, err := r.getServiceHash(credentials, config.Metadata.Branch, service)
+				hash, err := r.getServiceHash(config.Metadata.Branch, service)
 				if err != nil {
 					r.ReqLogger.Error(err, "Could not get Hash for Service "+service.Name)
 					return ctrl.Result{RequeueAfter: 30 * time.Second}, err
@@ -265,6 +274,7 @@ func (r *KeptnProjectReconciler) triggerDeployment(project string, service Keptn
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: project + "-" + service.Name, Namespace: namespace}, &keptnService)
 
 	if hash != keptnService.Status.Hash {
+		keptnService.Status.DesiredVersion = r.getServiceVersion(stage, service)
 		keptnService.Status.DeploymentPending = true
 		keptnService.Spec.StartStage = stage
 		keptnService.Status.Hash = hash
@@ -307,21 +317,21 @@ func (r *KeptnProjectReconciler) removeService(project string, service string, n
 	return nil
 }
 
-func (r *KeptnProjectReconciler) getCommitHash(credentials GitCredentials, branch string) (string, error) {
+func (r *KeptnProjectReconciler) getCommitHash(branch string) (string, error) {
 
 	authentication := &http.BasicAuth{
-		Username: credentials.User,
-		Password: credentials.Token,
+		Username: r.KeptnCredentials.User,
+		Password: r.KeptnCredentials.Token,
 	}
 
 	cloneOptions := git.CloneOptions{
-		URL:  credentials.RemoteURI,
+		URL:  r.KeptnCredentials.RemoteURI,
 		Auth: authentication,
 	}
 
 	if branch != "" {
 		cloneOptions = git.CloneOptions{
-			URL:           credentials.RemoteURI,
+			URL:           r.KeptnCredentials.RemoteURI,
 			Auth:          authentication,
 			ReferenceName: plumbing.ReferenceName("refs/heads/" + branch),
 		}
@@ -329,27 +339,27 @@ func (r *KeptnProjectReconciler) getCommitHash(credentials GitCredentials, branc
 
 	repo, err := git.Clone(memory.NewStorage(), nil, &cloneOptions)
 	if err != nil {
-		r.ReqLogger.Error(err, "Could not clone repository "+credentials.RemoteURI)
+		r.ReqLogger.Error(err, "Could not clone repository "+r.KeptnCredentials.RemoteURI)
 		return "", err
 	}
 
 	head, err := repo.Head()
 	if err != nil {
-		r.ReqLogger.Error(err, "Could get head for "+credentials.RemoteURI)
+		r.ReqLogger.Error(err, "Could get head for "+r.KeptnCredentials.RemoteURI)
 		return "", err
 	}
 	return head.Hash().String(), nil
 }
 
-func (r *KeptnProjectReconciler) getServiceHash(credentials GitCredentials, branch string, service KeptnService) (string, error) {
+func (r *KeptnProjectReconciler) getServiceHash(branch string, service KeptnService) (string, error) {
 
 	authentication := &http.BasicAuth{
-		Username: credentials.User,
-		Password: credentials.Token,
+		Username: r.KeptnCredentials.User,
+		Password: r.KeptnCredentials.Token,
 	}
 
 	cloneOptions := git.CloneOptions{
-		URL:           credentials.RemoteURI,
+		URL:           r.KeptnCredentials.RemoteURI,
 		Auth:          authentication,
 		ReferenceName: plumbing.ReferenceName("refs/heads/" + branch),
 		SingleBranch:  true,
@@ -359,7 +369,7 @@ func (r *KeptnProjectReconciler) getServiceHash(credentials GitCredentials, bran
 
 	_, err := git.PlainClone(dir, false, &cloneOptions)
 	if err != nil {
-		r.ReqLogger.Error(err, "Could not checkout "+credentials.RemoteURI)
+		r.ReqLogger.Error(err, "Could not checkout "+r.KeptnCredentials.RemoteURI)
 		return "", err
 	}
 
@@ -369,6 +379,47 @@ func (r *KeptnProjectReconciler) getServiceHash(credentials GitCredentials, bran
 	}
 	defer os.RemoveAll(dir)
 	return hash, nil
+}
+
+func (r *KeptnProjectReconciler) getServiceVersion(branch string, service KeptnService) string {
+
+	config := &DeploymentConfig{}
+	authentication := &http.BasicAuth{
+		Username: r.KeptnCredentials.User,
+		Password: r.KeptnCredentials.Token,
+	}
+
+	cloneOptions := git.CloneOptions{
+		URL:           r.KeptnCredentials.RemoteURI,
+		Auth:          authentication,
+		ReferenceName: plumbing.ReferenceName("refs/heads/" + branch),
+		SingleBranch:  true,
+	}
+
+	dir, _ := ioutil.TempDir("", "temp_dir")
+
+	_, err := git.PlainClone(dir, false, &cloneOptions)
+	if err != nil {
+		r.ReqLogger.Error(err, "Could not checkout "+r.KeptnCredentials.RemoteURI)
+		return ""
+	}
+
+	if _, err := os.Stat(filepath.Join(dir, service.Name, "metadata/deployment.yaml")); err == nil {
+		yamlFile, err := ioutil.ReadFile(filepath.Join(dir, service.Name, "metadata/deployment.yaml"))
+		if err != nil {
+			return ""
+		}
+
+		err = yaml.Unmarshal(yamlFile, config)
+		if err != nil {
+			return ""
+		}
+
+	} else {
+		r.ReqLogger.Info("There is no version information file for service " + service.Name)
+	}
+	defer os.RemoveAll(dir)
+	return config.Metadata.ImageVersion
 }
 
 func (r *KeptnProjectReconciler) getKeptnServices(project string) keptnv1.KeptnServiceList {
