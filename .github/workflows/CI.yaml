@@ -3,13 +3,13 @@ on:
   # always execute docker build when something is pushed to master or release-* branches
   push:
     branches:
-      - 'master'
+      - 'main'
       - 'release-*'
       - 'init'
   # in addition, execute for pull requests to those branches
   pull_request:
     branches:
-      - 'master'
+      - 'main'
       - 'release-*'
 defaults:
   run:
