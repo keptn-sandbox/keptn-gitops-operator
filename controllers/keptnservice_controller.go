@@ -230,7 +230,11 @@ func (r *KeptnServiceReconciler) checkKeptnServiceExists(service *keptnv1.KeptnS
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: "keptn-api-token", Namespace: namespace}, keptnToken)
 	secret := string(keptnToken.Data["keptn-api-token"])
 
-	request, err := nethttp.NewRequest("GET", r.keptnApi+"/configuration-service/v1/project/"+service.Spec.Project+"/stage/"+service.Spec.StartStage+"/service/"+service.Spec.Service+"/resource", bytes.NewBuffer(nil))
+	request, err := nethttp.NewRequest("GET", r.keptnApi+"/controlPlane/v1/project/"+service.Spec.Project+"/stage/"+service.Spec.StartStage+"/service/"+service.Spec.Service+"/resource", bytes.NewBuffer(nil))
+	if err != nil {
+		r.ReqLogger.Error(err, "Could not check if service exists "+service.Spec.Service)
+	}
+
 	request.Header.Set("x-token", secret)
 
 	response, err := httpclient.Do(request)
