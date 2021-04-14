@@ -33,6 +33,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	keptnv2 "github.com/keptn/go-utils/pkg/lib/v0_2_0"
 	keptnv1 "keptn-operator/api/v1"
 )
 
@@ -79,7 +80,9 @@ func (r *KeptnServiceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	if service.Status.DeploymentPending {
 		r.ReqLogger.Info("Deployment is pending")
-		err = r.triggerDeployment(service.Spec.Service, req.Namespace, service.Spec.Project, service.Spec.StartStage, service.Spec.TriggerCommand, service.Status.DesiredVersion)
+		err = r.triggerDeployment(service.Spec.Service, req.Namespace, service.Spec.Project, service.Spec.StartStage,
+			service.Spec.TriggerCommand, service.Status.DesiredVersion, service.Spec.DeploymentURIsLocal,
+			service.Spec.DeploymentURIsPublic)
 		if err != nil {
 			return ctrl.Result{RequeueAfter: 60 * time.Second}, err
 		}
@@ -173,7 +176,8 @@ func (r *KeptnServiceReconciler) deleteService(service string, namespace string,
 	return err
 }
 
-func (r *KeptnServiceReconciler) triggerDeployment(service string, namespace string, project string, stage string, trigger string, version string) error {
+func (r *KeptnServiceReconciler) triggerDeployment(service string, namespace string, project string, stage string,
+	trigger string, version string, deploymentURIsLocal []string, deploymentURIsPublic []string) error {
 
 	httpclient := nethttp.Client{
 		Timeout: 30 * time.Second,
@@ -187,11 +191,17 @@ func (r *KeptnServiceReconciler) triggerDeployment(service string, namespace str
 
 	data, err := json.Marshal(KeptnTriggerEvent{
 		ContentType: "application/json",
-		Data: KeptnEventData{
-			Service: service,
-			Project: project,
-			Stage:   stage,
-			Labels:  labels,
+		Data: keptnv2.DeploymentTriggeredEventData{
+			EventData: keptnv2.EventData{
+				Service: service,
+				Project: project,
+				Stage:   stage,
+				Labels:  labels,
+			},
+			Deployment: keptnv2.DeploymentTriggeredData{
+				DeploymentURIsLocal:  deploymentURIsLocal,
+				DeploymentURIsPublic: deploymentURIsPublic,
+			},
 		},
 		Source:      "Keptn GitOps Operator",
 		SpecVersion: "1.0",

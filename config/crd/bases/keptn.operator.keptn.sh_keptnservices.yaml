@@ -34,6 +34,16 @@ spec:
         spec:
           description: KeptnServiceSpec defines the desired state of KeptnService
           properties:
+            deploymentURIsLocal:
+              description: DeploymentURILocal contains the local URL
+              items:
+                type: string
+              type: array
+            deploymentURIsPublic:
+              description: DeploymentURIPublic contains the public URL
+              items:
+                type: string
+              type: array
             project:
               description: Foo is an example field of KeptnService. Edit KeptnService_types.go
                 to remove/update

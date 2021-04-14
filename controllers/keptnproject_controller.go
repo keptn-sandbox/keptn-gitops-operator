@@ -42,6 +42,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	keptnv2 "github.com/keptn/go-utils/pkg/lib/v0_2_0"
 	keptnv1 "keptn-operator/api/v1"
 )
 
@@ -66,18 +67,11 @@ type KeptnService struct {
 }
 
 type KeptnTriggerEvent struct {
-	ContentType string         `json:"contenttype,omitempty"`
-	Data        KeptnEventData `json:"data,omitempty"`
-	Source      string         `json:"source,omitempty"`
-	SpecVersion string         `json:"specversion,omitempty"`
-	Type        string         `json:"type,omitempty"`
-}
-
-type KeptnEventData struct {
-	Project string            `json:"project,omitempty"`
-	Service string            `json:"service,omitempty"`
-	Stage   string            `json:"stage,omitempty"`
-	Labels  map[string]string `json:"labels,omitempty"`
+	ContentType string                               `json:"contenttype,omitempty"`
+	Data        keptnv2.DeploymentTriggeredEventData `json:"data,omitempty"`
+	Source      string                               `json:"source,omitempty"`
+	SpecVersion string                               `json:"specversion,omitempty"`
+	Type        string                               `json:"type,omitempty"`
 }
 
 type DeploymentConfig struct {
@@ -86,6 +80,10 @@ type DeploymentConfig struct {
 
 type DeploymentConfigMeta struct {
 	ImageVersion string `yaml:"imageVersion,omitempty"`
+	// DeploymentURILocal contains the local URL
+	DeploymentURIsLocal []string `json:"deploymentURIsLocal,omitempty"`
+	// DeploymentURIPublic contains the public URL
+	DeploymentURIsPublic []string `json:"deploymentURIsPublic,omitempty"`
 }
 
 // KeptnProjectReconciler reconciles a KeptnProject object
@@ -278,10 +276,15 @@ func (r *KeptnProjectReconciler) triggerDeployment(project string, service Keptn
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: project + "-" + service.Name, Namespace: namespace}, &keptnService)
 
 	if hash != keptnService.Status.Hash {
-		keptnService.Status.DesiredVersion = r.getServiceVersion(stage, service)
+
+		metadata := r.getDeploymentConfigMetadata(stage, service)
+
+		keptnService.Status.DesiredVersion = metadata.ImageVersion
 		keptnService.Status.DeploymentPending = true
 		keptnService.Spec.StartStage = stage
 		keptnService.Status.Hash = hash
+		keptnService.Spec.DeploymentURIsLocal = metadata.DeploymentURIsLocal
+		keptnService.Spec.DeploymentURIsPublic = metadata.DeploymentURIsPublic
 
 		err = r.Client.Update(context.TODO(), &keptnService)
 		if err != nil {
@@ -385,7 +388,7 @@ func (r *KeptnProjectReconciler) getServiceHash(branch string, service KeptnServ
 	return hash, nil
 }
 
-func (r *KeptnProjectReconciler) getServiceVersion(branch string, service KeptnService) string {
+func (r *KeptnProjectReconciler) getDeploymentConfigMetadata(branch string, service KeptnService) DeploymentConfigMeta {
 
 	config := &DeploymentConfig{}
 	authentication := &http.BasicAuth{
@@ -405,25 +408,25 @@ func (r *KeptnProjectReconciler) getServiceVersion(branch string, service KeptnS
 	_, err := git.PlainClone(dir, false, &cloneOptions)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not checkout "+r.KeptnCredentials.RemoteURI)
-		return ""
+		return DeploymentConfigMeta{}
 	}
 
 	if _, err := os.Stat(filepath.Join(dir, service.Name, "metadata/deployment.yaml")); err == nil {
 		yamlFile, err := ioutil.ReadFile(filepath.Join(dir, service.Name, "metadata/deployment.yaml"))
 		if err != nil {
-			return ""
+			return DeploymentConfigMeta{}
 		}
 
 		err = yaml.Unmarshal(yamlFile, config)
 		if err != nil {
-			return ""
+			return DeploymentConfigMeta{}
 		}
 
 	} else {
 		r.ReqLogger.Info("There is no version information file for service " + service.Name)
 	}
 	defer os.RemoveAll(dir)
-	return config.Metadata.ImageVersion
+	return config.Metadata
 }
 
 func (r *KeptnProjectReconciler) getKeptnServices(project string) keptnv1.KeptnServiceList {

@@ -33,6 +33,10 @@ type KeptnServiceSpec struct {
 	Service        string `json:"service,omitempty"`
 	TriggerCommand string `json:"trigger,omitempty"`
 	StartStage     string `json:"startstage,omitempty"`
+	// DeploymentURILocal contains the local URL
+	DeploymentURIsLocal []string `json:"deploymentURIsLocal,omitempty"`
+	// DeploymentURIPublic contains the public URL
+	DeploymentURIsPublic []string `json:"deploymentURIsPublic,omitempty"`
 }
 
 // KeptnServiceStatus defines the observed state of KeptnService
