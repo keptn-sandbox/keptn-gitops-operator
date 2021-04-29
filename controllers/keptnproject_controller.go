@@ -349,9 +349,9 @@ func (r *KeptnProjectReconciler) getServiceVersion(service KeptnService) string 
 	}
 
 	cloneOptions := git.CloneOptions{
-		URL:           r.KeptnCredentials.RemoteURI,
-		Auth:          authentication,
-		SingleBranch:  true,
+		URL:          r.KeptnCredentials.RemoteURI,
+		Auth:         authentication,
+		SingleBranch: true,
 	}
 
 	dir, _ := ioutil.TempDir("", "temp_dir")
