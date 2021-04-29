@@ -191,8 +191,6 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		}
 	}
 
-	project.Status.LastMainCommit = mainHead
-
 	if project.Status.LastMainCommit != mainHead {
 		for _, service := range config.Services {
 			err = r.triggerDeployment(project.Name, service, config.Metadata.Branch, req.Namespace)
@@ -202,7 +200,6 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 			}
 		}
 	}
-
 	project.Status.LastMainCommit = mainHead
 
 	err = r.Client.Update(context.TODO(), project)
