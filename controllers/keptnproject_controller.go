@@ -28,7 +28,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
-	hashdir "github.com/sger/go-hashdir"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -161,8 +160,6 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 			return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 		}
 
-		project.Status.WatchedBranch = config.Metadata.Branch
-
 		for _, service := range config.Services {
 			err = r.createKeptnService(project, service, req.Namespace)
 			if err != nil {
@@ -194,31 +191,16 @@ func (r *KeptnProjectReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		}
 	}
 
-	project.Status.LastMainCommit = mainHead
-
-	if project.Status.WatchedBranch != "" {
-		appCommitHash, err := r.getCommitHash(project.Status.WatchedBranch)
-		if err != nil {
-			return ctrl.Result{RequeueAfter: 30 * time.Second}, err
-		}
-
-		if project.Status.LastDeployCommit != appCommitHash {
-			r.ReqLogger.Info("App Branch State has changed - Triggering new Deployment")
-			for _, service := range config.Services {
-				hash, err := r.getServiceHash(config.Metadata.Branch, service)
-				if err != nil {
-					r.ReqLogger.Error(err, "Could not get Hash for Service "+service.Name)
-					return ctrl.Result{RequeueAfter: 30 * time.Second}, err
-				}
-				err = r.triggerDeployment(project.Name, service, config.Metadata.Branch, req.Namespace, hash)
-				if err != nil {
-					r.ReqLogger.Error(err, "Could not trigger deployment "+service.Name)
-					return ctrl.Result{RequeueAfter: 30 * time.Second}, err
-				}
+	if project.Status.LastMainCommit != mainHead {
+		for _, service := range config.Services {
+			err = r.triggerDeployment(project.Name, service, config.Metadata.Branch, req.Namespace)
+			if err != nil {
+				r.ReqLogger.Error(err, "Could not trigger deployment "+service.Name)
+				return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 			}
-			project.Status.LastDeployCommit = appCommitHash
 		}
 	}
+	project.Status.LastMainCommit = mainHead
 
 	err = r.Client.Update(context.TODO(), project)
 	if err != nil {
@@ -272,17 +254,16 @@ func (r *KeptnProjectReconciler) createKeptnService(project *keptnv1.KeptnProjec
 	return nil
 }
 
-func (r *KeptnProjectReconciler) triggerDeployment(project string, service KeptnService, stage string, namespace string, hash string) error {
+func (r *KeptnProjectReconciler) triggerDeployment(project string, service KeptnService, stage string, namespace string) error {
 
 	keptnService := keptnv1.KeptnService{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: project + "-" + service.Name, Namespace: namespace}, &keptnService)
 
-	if hash != keptnService.Status.Hash {
-		keptnService.Status.DesiredVersion = r.getServiceVersion(stage, service)
-		keptnService.Status.DeploymentPending = true
+	newVersion := r.getServiceVersion(service)
+	if newVersion != keptnService.Status.DesiredVersion {
+		keptnService.Status.DesiredVersion = newVersion
 		keptnService.Spec.StartStage = stage
-		keptnService.Status.Hash = hash
-
+		keptnService.Status.DeploymentPending = true
 		err = r.Client.Update(context.TODO(), &keptnService)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update KeptnService "+service.Name)
@@ -291,6 +272,7 @@ func (r *KeptnProjectReconciler) triggerDeployment(project string, service Keptn
 			r.ReqLogger.Info("Updated Service")
 		}
 	}
+
 	return nil
 }
 
@@ -355,37 +337,7 @@ func (r *KeptnProjectReconciler) getCommitHash(branch string) (string, error) {
 	return head.Hash().String(), nil
 }
 
-func (r *KeptnProjectReconciler) getServiceHash(branch string, service KeptnService) (string, error) {
-
-	authentication := &http.BasicAuth{
-		Username: r.KeptnCredentials.User,
-		Password: r.KeptnCredentials.Token,
-	}
-
-	cloneOptions := git.CloneOptions{
-		URL:           r.KeptnCredentials.RemoteURI,
-		Auth:          authentication,
-		ReferenceName: plumbing.ReferenceName("refs/heads/" + branch),
-		SingleBranch:  true,
-	}
-
-	dir, _ := ioutil.TempDir("", "temp_dir")
-
-	_, err := git.PlainClone(dir, false, &cloneOptions)
-	if err != nil {
-		r.ReqLogger.Error(err, "Could not checkout "+r.KeptnCredentials.RemoteURI)
-		return "", err
-	}
-
-	hash, err := hashdir.Create(filepath.Join(dir, service.Name, "helm"), "md5")
-	if err != nil {
-		return "", err
-	}
-	defer os.RemoveAll(dir)
-	return hash, nil
-}
-
-func (r *KeptnProjectReconciler) getServiceVersion(branch string, service KeptnService) string {
+func (r *KeptnProjectReconciler) getServiceVersion(service KeptnService) string {
 
 	config := &DeploymentConfig{}
 	authentication := &http.BasicAuth{
@@ -394,10 +346,9 @@ func (r *KeptnProjectReconciler) getServiceVersion(branch string, service KeptnS
 	}
 
 	cloneOptions := git.CloneOptions{
-		URL:           r.KeptnCredentials.RemoteURI,
-		Auth:          authentication,
-		ReferenceName: plumbing.ReferenceName("refs/heads/" + branch),
-		SingleBranch:  true,
+		URL:          r.KeptnCredentials.RemoteURI,
+		Auth:         authentication,
+		SingleBranch: true,
 	}
 
 	dir, _ := ioutil.TempDir("", "temp_dir")
@@ -408,8 +359,8 @@ func (r *KeptnProjectReconciler) getServiceVersion(branch string, service KeptnS
 		return ""
 	}
 
-	if _, err := os.Stat(filepath.Join(dir, service.Name, "metadata/deployment.yaml")); err == nil {
-		yamlFile, err := ioutil.ReadFile(filepath.Join(dir, service.Name, "metadata/deployment.yaml"))
+	if _, err := os.Stat(filepath.Join(dir, "base", service.Name, "metadata/deployment.yaml")); err == nil {
+		yamlFile, err := ioutil.ReadFile(filepath.Join(dir, "base", service.Name, "metadata/deployment.yaml"))
 		if err != nil {
 			return ""
 		}

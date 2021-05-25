@@ -36,9 +36,7 @@ type KeptnProjectSpec struct {
 type KeptnProjectStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	LastMainCommit   string `json:"mainCommit,omitempty"`
-	LastDeployCommit string `json:"deployCommit,omitempty"`
-	WatchedBranch    string `json:"watchedBranch,omitempty"`
+	LastMainCommit string `json:"mainCommit,omitempty"`
 }
 
 // +kubebuilder:object:root=true

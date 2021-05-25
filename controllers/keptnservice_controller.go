@@ -92,10 +92,11 @@ func (r *KeptnServiceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		return ctrl.Result{}, nil
 	}
 
-	if service.Status.DeletionPending {
+	if service.Status.DeletionPending && !service.Status.SafeToDelete {
 		r.ReqLogger.Info("Deletion is pending")
 		err = r.deleteService(service.Spec.Service, req.Namespace, service.Spec.Project)
 		if err != nil {
+			r.ReqLogger.Error(err, "Could not delete Service")
 			return ctrl.Result{RequeueAfter: 60 * time.Second}, err
 		}
 		service.Status.SafeToDelete = true
