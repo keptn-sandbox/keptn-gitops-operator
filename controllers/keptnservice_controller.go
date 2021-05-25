@@ -79,7 +79,7 @@ func (r *KeptnServiceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	if service.Status.DeploymentPending {
 		r.ReqLogger.Info("Deployment is pending")
-		err = r.triggerDeployment(service.Spec.Service, req.Namespace, service.Spec.Project, service.Spec.StartStage, service.Spec.TriggerCommand, service.Status.DesiredVersion)
+		err = r.triggerDeployment(service.Spec.Service, req.Namespace, service.Spec.Project, service.Spec.StartStage, service.Spec.TriggerCommand, service.Status.DesiredVersion, service.Status.LastAuthor, service.Status.LastSourceCommitHash)
 		if err != nil {
 			return ctrl.Result{RequeueAfter: 60 * time.Second}, err
 		}
@@ -174,21 +174,34 @@ func (r *KeptnServiceReconciler) deleteService(service string, namespace string,
 	return err
 }
 
-func (r *KeptnServiceReconciler) triggerDeployment(service string, namespace string, project string, stage string, trigger string, version string) error {
+func (r *KeptnServiceReconciler) triggerDeployment(service string, namespace string, project string, stage string, trigger string, version string, author string, sourceGitHash string) error {
 
 	httpclient := nethttp.Client{
 		Timeout: 30 * time.Second,
 	}
 
 	labels := make(map[string]string)
+	values := make(map[string]string)
 
 	if version != "" {
 		labels["version"] = version
 	}
 
+	if author != "" {
+		labels["author"] = author
+	}
+
+	if sourceGitHash != "" {
+		labels["sourceGitHash"] = sourceGitHash
+	}
+
+	values["imageName"] = service + ":" + version
+
 	data, err := json.Marshal(KeptnTriggerEvent{
 		ContentType: "application/json",
 		Data: KeptnEventData{
+			ConfigurationChange: ConfigurationChangeData{
+				Values: values },
 			Service: service,
 			Project: project,
 			Stage:   stage,
