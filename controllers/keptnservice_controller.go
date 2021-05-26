@@ -181,7 +181,6 @@ func (r *KeptnServiceReconciler) triggerDeployment(service string, namespace str
 	}
 
 	labels := make(map[string]string)
-	values := make(map[string]string)
 
 	if version != "" {
 		labels["version"] = version
@@ -195,17 +194,14 @@ func (r *KeptnServiceReconciler) triggerDeployment(service string, namespace str
 		labels["sourceGitHash"] = sourceGitHash
 	}
 
-	values["image"] = service + ":" + version
-
 	data, err := json.Marshal(KeptnTriggerEvent{
 		ContentType: "application/json",
 		Data: KeptnEventData{
-			ConfigurationChange: ConfigurationChangeData{
-				Values: values },
 			Service: service,
 			Project: project,
 			Stage:   stage,
 			Labels:  labels,
+			Image: service + ":" + version,
 		},
 		Source:      "Keptn GitOps Operator",
 		SpecVersion: "1.0",

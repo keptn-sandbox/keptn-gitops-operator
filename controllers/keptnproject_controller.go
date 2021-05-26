@@ -76,6 +76,7 @@ type KeptnEventData struct {
 	Project             string                  `json:"project,omitempty"`
 	Service             string                  `json:"service,omitempty"`
 	Stage               string                  `json:"stage,omitempty"`
+	Image               string                  `json:"image,omitempty"`
 	Labels              map[string]string       `json:"labels,omitempty"`
 	ConfigurationChange ConfigurationChangeData `json:"configurationChange,omitempty"`
 }
