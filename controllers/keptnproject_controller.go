@@ -81,7 +81,7 @@ type KeptnEventData struct {
 }
 
 type ConfigurationChangeData struct {
-	Values map[string]string `yaml:"values,omitempty"`
+	Values map[string]string `json:"values,omitempty"`
 }
 
 type DeploymentConfig struct {
