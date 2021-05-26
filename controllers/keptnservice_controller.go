@@ -195,7 +195,7 @@ func (r *KeptnServiceReconciler) triggerDeployment(service string, namespace str
 		labels["sourceGitHash"] = sourceGitHash
 	}
 
-	values["imageName"] = service + ":" + version
+	values["image"] = service + ":" + version
 
 	data, err := json.Marshal(KeptnTriggerEvent{
 		ContentType: "application/json",
