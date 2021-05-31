@@ -37,13 +37,15 @@ type KeptnServiceSpec struct {
 
 // KeptnServiceStatus defines the observed state of KeptnService
 type KeptnServiceStatus struct {
-	LastDeployed      string `json:"lastdeployed,omitempty"`
-	LastSetupStatus   int    `json:"lastsetupstate,omitempty"`
-	DeploymentPending bool   `json:"deloymentpending,omitempty"`
-	DeletionPending   bool   `json:"deletionpending,omitempty"`
-	SafeToDelete      bool   `json:"safetodelete,omitempty"`
-	DesiredVersion    string `json:"desiredversion,omitempty"`
-	CreationPending   bool   `json:"creationpending,omitempty"`
+	LastDeployed         string `json:"lastdeployed,omitempty"`
+	LastSetupStatus      int    `json:"lastsetupstate,omitempty"`
+	DeploymentPending    bool   `json:"deloymentpending,omitempty"`
+	DeletionPending      bool   `json:"deletionpending,omitempty"`
+	SafeToDelete         bool   `json:"safetodelete,omitempty"`
+	DesiredVersion       string `json:"desiredversion,omitempty"`
+	CreationPending      bool   `json:"creationpending,omitempty"`
+	LastAuthor           string `json:"author,omitempty"`
+	LastSourceCommitHash string `json:"sourceCommitHash,omitempty"`
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 }

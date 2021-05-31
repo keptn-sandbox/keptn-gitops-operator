@@ -73,10 +73,16 @@ type KeptnTriggerEvent struct {
 }
 
 type KeptnEventData struct {
-	Project string            `json:"project,omitempty"`
-	Service string            `json:"service,omitempty"`
-	Stage   string            `json:"stage,omitempty"`
-	Labels  map[string]string `json:"labels,omitempty"`
+	Project             string                  `json:"project,omitempty"`
+	Service             string                  `json:"service,omitempty"`
+	Stage               string                  `json:"stage,omitempty"`
+	Image               string                  `json:"image,omitempty"`
+	Labels              map[string]string       `json:"labels,omitempty"`
+	ConfigurationChange ConfigurationChangeData `json:"configurationChange,omitempty"`
+}
+
+type ConfigurationChangeData struct {
+	Values map[string]string `json:"values,omitempty"`
 }
 
 type DeploymentConfig struct {
@@ -84,7 +90,9 @@ type DeploymentConfig struct {
 }
 
 type DeploymentConfigMeta struct {
-	ImageVersion string `yaml:"imageVersion,omitempty"`
+	ImageVersion     string `yaml:"imageVersion,omitempty"`
+	SourceCommitHash string `yaml:"gitCommit,omitempty"`
+	Author           string `yaml:"author,omitempty"`
 }
 
 // KeptnProjectReconciler reconciles a KeptnProject object
@@ -259,9 +267,11 @@ func (r *KeptnProjectReconciler) triggerDeployment(project string, service Keptn
 	keptnService := keptnv1.KeptnService{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: project + "-" + service.Name, Namespace: namespace}, &keptnService)
 
-	newVersion := r.getServiceVersion(service)
+	newVersion, author, commitHash := r.getServiceVersion(service)
 	if newVersion != keptnService.Status.DesiredVersion {
 		keptnService.Status.DesiredVersion = newVersion
+		keptnService.Status.LastAuthor = author
+		keptnService.Status.LastSourceCommitHash = commitHash
 		keptnService.Spec.StartStage = stage
 		keptnService.Status.DeploymentPending = true
 		err = r.Client.Update(context.TODO(), &keptnService)
@@ -337,7 +347,7 @@ func (r *KeptnProjectReconciler) getCommitHash(branch string) (string, error) {
 	return head.Hash().String(), nil
 }
 
-func (r *KeptnProjectReconciler) getServiceVersion(service KeptnService) string {
+func (r *KeptnProjectReconciler) getServiceVersion(service KeptnService) (version string, author string, commitHash string) {
 
 	config := &DeploymentConfig{}
 	authentication := &http.BasicAuth{
@@ -356,25 +366,25 @@ func (r *KeptnProjectReconciler) getServiceVersion(service KeptnService) string 
 	_, err := git.PlainClone(dir, false, &cloneOptions)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not checkout "+r.KeptnCredentials.RemoteURI)
-		return ""
+		return "", "", ""
 	}
 
 	if _, err := os.Stat(filepath.Join(dir, "base", service.Name, "metadata/deployment.yaml")); err == nil {
 		yamlFile, err := ioutil.ReadFile(filepath.Join(dir, "base", service.Name, "metadata/deployment.yaml"))
 		if err != nil {
-			return ""
+			return "", "", ""
 		}
 
 		err = yaml.Unmarshal(yamlFile, config)
 		if err != nil {
-			return ""
+			return "", "", ""
 		}
 
 	} else {
 		r.ReqLogger.Info("There is no version information file for service " + service.Name)
 	}
 	defer os.RemoveAll(dir)
-	return config.Metadata.ImageVersion
+	return config.Metadata.ImageVersion, config.Metadata.Author, config.Metadata.SourceCommitHash
 }
 
 func (r *KeptnProjectReconciler) getKeptnServices(project string) keptnv1.KeptnServiceList {
