@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -35,6 +36,19 @@ var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
 )
+
+func getWatchNamespace() (string, error) {
+	// WatchNamespaceEnvVar is the constant for env variable WATCH_NAMESPACE
+	// which specifies the Namespace to watch.
+	// An empty value means the operator is running with cluster scope.
+	var watchNamespaceEnvVar = "WATCH_NAMESPACE"
+
+	ns, found := os.LookupEnv(watchNamespaceEnvVar)
+	if !found {
+		return "", fmt.Errorf("%s must be set", watchNamespaceEnvVar)
+	}
+	return ns, nil
+}
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
@@ -54,12 +68,19 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
+	watchNamespace, err := getWatchNamespace()
+	if err != nil {
+		setupLog.Error(err, "unable to get WatchNamespace, "+
+			"the manager will watch and manage resources in all namespaces")
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr,
 		Port:               9443,
 		LeaderElection:     enableLeaderElection,
 		LeaderElectionID:   "a7f0ddd8.operator.keptn.sh",
+		Namespace:          watchNamespace,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

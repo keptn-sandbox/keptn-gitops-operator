@@ -25,19 +25,38 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "keptn-gitops-operator.serviceAccountName" . }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+
       containers:
         - name: keptn-gitops-operator
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
+            runAsNonRoot: true
+            privileged: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
           - name: KEPTN_API_ENDPOINT
             value: "{{ .Values.apiUrl }} "
+          - name: WATCH_NAMESPACE
+            value: "{{ .Values.watchNamespace | default .Release.Namespace }}"
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+          - mountPath: /tmp
+            name: tmp-volume
+            readOnly: false
       {{- with .Values.nodeSelector }}
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
