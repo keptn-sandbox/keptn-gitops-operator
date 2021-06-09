@@ -201,7 +201,7 @@ func (r *KeptnServiceReconciler) triggerDeployment(service string, namespace str
 			Project: project,
 			Stage:   stage,
 			Labels:  labels,
-			Image: service + ":" + version,
+			Image:   service + ":" + version,
 		},
 		Source:      "Keptn GitOps Operator",
 		SpecVersion: "1.0",
