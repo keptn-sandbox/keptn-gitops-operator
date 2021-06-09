@@ -1,4 +1,5 @@
 apiUrl: "http://api-gateway-nginx/api"
+watchNamespace: ""
 
 image:
   repository: docker.io/keptn/keptn-gitops-operator # Container Image Name

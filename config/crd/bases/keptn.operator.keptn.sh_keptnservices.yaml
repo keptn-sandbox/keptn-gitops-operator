@@ -48,6 +48,8 @@ spec:
         status:
           description: KeptnServiceStatus defines the observed state of KeptnService
           properties:
+            author:
+              type: string
             creationpending:
               type: boolean
             deletionpending:
@@ -62,6 +64,8 @@ spec:
               type: integer
             safetodelete:
               type: boolean
+            sourceCommitHash:
+              type: string
           type: object
       type: object
   version: v1
