@@ -1,0 +1,20 @@
+name: Semantic PR Validation
+on:
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - synchronize
+jobs:
+  validate:
+    uses: keptn/gh-automation/.github/workflows/validate-semantic-pr.yml@main
+    with:
+      # Configure which scopes are allowed.
+      scopes: |
+        keptn-operator
+        github-operator
+        install
+        deps
+        deps-dev
+        docs
+        release

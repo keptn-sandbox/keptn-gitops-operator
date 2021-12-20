@@ -3,11 +3,13 @@ on:
   # always execute docker build when something is pushed to master or release-* branches
   push:
     branches:
+      - 'master'
       - 'main'
       - 'release-*'
   # in addition, execute for pull requests to those branches
   pull_request:
     branches:
+      - 'master'
       - 'main'
       - 'release-*'
 defaults:
@@ -38,7 +40,7 @@ jobs:
 
       - name: Load CI Environment from .ci_env
         id: load_ci_env
-        uses: c-py/action-dotenv-to-setenv@v2
+        uses: c-py/action-dotenv-to-setenv@v3
         with:
           env-file: .ci_env
 
@@ -49,10 +51,12 @@ jobs:
 
       - name: 'Get Previous tag'
         id: get_previous_tag
-        uses: "WyriHaximus/github-action-get-previous-tag@1.0.0"
+        uses: "WyriHaximus/github-action-get-previous-tag@v1.1"
+        with:
+          fallback: "0.0.1"
       - name: 'Get next patch version'
         id: get_next_semver_tag
-        uses: "WyriHaximus/github-action-next-semvers@v1"
+        uses: "WyriHaximus/github-action-next-semvers@v1.1"
         with:
           version: ${{ steps.get_previous_tag.outputs.tag }}
       - name: Get the version
@@ -93,34 +97,37 @@ jobs:
   ############################################################################
   # Unit tests                                                               #
   ############################################################################
-  # unit-tests:
-  #  name: Unit Tests
-  #  needs: prepare_ci_run
-  #  runs-on: ubuntu-20.04
-  #  steps:
-  #    - name: Set up Go 1.x
-  #      uses: actions/setup-go@v2
-  #      with:
-  #        go-version: ^1.13
-  #    - name: Checkout Code
-  #      uses: actions/checkout@v2
-  #
-  #    - name: Load CI Environment from .ci_env
-  #      id: load_ci_env
-  #      uses: c-py/action-dotenv-to-setenv@v2
-  #      with:
-  #        env-file: .ci_env
-  #
-  #    - name: Test
-  #      run: go test -coverprofile=coverage.txt -covermode=atomic -v ./...
-  #      working-directory: .
+  unit-tests:
+    name: Unit Tests
+    needs: prepare_ci_run
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.16.2
+      - name: Checkout Code
+        uses: actions/checkout@v2
 
+      - name: Load CI Environment from .ci_env
+        id: load_ci_env
+        uses: c-py/action-dotenv-to-setenv@v3
+        with:
+          env-file: .ci_env
+
+      - name: Test Keptn Operator
+        run: go test -coverprofile=coverage.txt -covermode=atomic -v ./...
+        working-directory: keptn-operator/.
+
+      - name: Test GitOps Operator
+        run: go test -coverprofile=coverage.txt -covermode=atomic -v ./...
+        working-directory: gitops-operator/.
 
   ############################################################################
   # Build Docker Image                                                      #
   ############################################################################
   docker_build:
-    needs: [prepare_ci_run]
+    needs: [prepare_ci_run, unit-tests]
     name: Docker Build
     runs-on: ubuntu-20.04
     env:
@@ -134,7 +141,7 @@ jobs:
 
       - name: Load CI Environment from .ci_env
         id: load_ci_env
-        uses: c-py/action-dotenv-to-setenv@v2
+        uses: c-py/action-dotenv-to-setenv@v3
         with:
           env-file: .ci_env
 
@@ -144,18 +151,28 @@ jobs:
         if: (github.event_name == 'push') || (github.event.pull_request.head.repo.full_name == github.repository)
         # note: GH does not allow to access secrets for PRs from a forked repositories due to security reasons
         # that's fine, but it means we can't push images to dockerhub
-        env:
-          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-        run: echo "$REGISTRY_PASSWORD" | docker login --username $REGISTRY_USER --password-stdin
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      - id: docker_build
-        name: Docker Build
+      - id: docker_build_service
+        name: Docker Build Service
         uses: keptn/gh-action-build-docker-image@master
         with:
           VERSION: ${{ env.VERSION }}
-          IMAGE_NAME: "${{ env.DOCKER_ORGANIZATION }}/${{ env.IMAGE }}"
+          IMAGE_NAME: "${{ env.DOCKER_ORGANIZATION }}/${{ env.GITOP_IMAGE }}"
           DATETIME: ${{ env.DATETIME }}
+          context: gitops-operator
+
+      - id: docker_build_keptnoperator
+        name: Docker Build Keptn Operator
+        uses: keptn/gh-action-build-docker-image@master
+        with:
+          VERSION: ${{ env.VERSION }}
+          IMAGE_NAME: "${{ env.DOCKER_ORGANIZATION }}/${{ env.KEPTNOP_IMAGE }}"
+          DATETIME: ${{ env.DATETIME }}
+          context: keptn-operator
 
       - id: create_docker_build_report
         name: Create Docker Build Report
