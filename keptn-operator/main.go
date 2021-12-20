@@ -18,17 +18,17 @@ package main
 
 import (
 	"flag"
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnScheduledExecController"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnscheduledexeccontroller"
 	"os"
 
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnstage_controller"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnstagecontroller"
 
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnsequenceController"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnsequencecontroller"
 
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnProjectController"
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnSequenceExecutionController"
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnServiceController"
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnShipyardController"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnprojectcontroller"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnsequenceexecutioncontroller"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnservicecontroller"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnshipyardcontroller"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -87,7 +87,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&keptnShipyardController.KeptnShipyardReconciler{
+	if err = (&keptnshipyardcontroller.KeptnShipyardReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("keptnshipyard-controller"),
@@ -95,7 +95,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "KeptnShipyard")
 		os.Exit(1)
 	}
-	if err = (&keptnProjectController.KeptnProjectReconciler{
+	if err = (&keptnprojectcontroller.KeptnProjectReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("keptnproject-controller"),
@@ -103,7 +103,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "KeptnProject")
 		os.Exit(1)
 	}
-	if err = (&keptnSequenceExecutionController.KeptnSequenceExecutionReconciler{
+	if err = (&keptnsequenceexecutioncontroller.KeptnSequenceExecutionReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("keptnsequenceexecution-controller"),
@@ -111,7 +111,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "KeptnSequenceExecution")
 		os.Exit(1)
 	}
-	if err = (&keptnServiceController.KeptnServiceReconciler{
+	if err = (&keptnservicecontroller.KeptnServiceReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("keptnservice-controller"),
@@ -120,21 +120,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&keptnsequenceController.KeptnSequenceReconciler{
+	if err = (&keptnsequencecontroller.KeptnSequenceReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KeptnSequence")
 		os.Exit(1)
 	}
-	if err = (&keptnstage_controller.KeptnStageReconciler{
+	if err = (&keptnstagecontroller.KeptnStageReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KeptnStage")
 		os.Exit(1)
 	}
-	if err = (&keptnScheduledExecController.KeptnScheduledExecReconciler{
+	if err = (&keptnscheduledexeccontroller.KeptnScheduledExecReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("keptnservice-controller"),

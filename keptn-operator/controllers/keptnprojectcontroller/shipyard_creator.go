@@ -1,4 +1,4 @@
-package keptnProjectController
+package keptnprojectcontroller
 
 import (
 	"context"
