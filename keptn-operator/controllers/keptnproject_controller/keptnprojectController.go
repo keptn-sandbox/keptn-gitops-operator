@@ -233,7 +233,7 @@ func (r *KeptnProjectReconciler) createProject(ctx context.Context, project *api
 		Timeout: 30 * time.Second,
 	}
 
-	secret, err := DecryptSecret(project.Spec.Password)
+	secret, err := decryptSecret(project.Spec.Password)
 	if err != nil {
 		fmt.Println("could not decrypt secret")
 		return 0, err

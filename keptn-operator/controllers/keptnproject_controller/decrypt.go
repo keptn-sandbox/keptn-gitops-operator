@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-func DecryptSecret(secret string) (string, error) {
+func decryptSecret(secret string) (string, error) {
 	data := strings.Split(secret, ":")
 
 	if data[0] == "rsa" {
@@ -21,7 +21,7 @@ func DecryptSecret(secret string) (string, error) {
 			return "", fmt.Errorf("environment variable RSA_PRIVATE_KEY is not set, will not be able to decrypt secrets")
 		}
 
-		secret, err := DecryptPrivatePEM(data[1], pemPrivate)
+		secret, err := decryptPrivatePEM(data[1], pemPrivate)
 		if err != nil {
 			return "", err
 		}
@@ -30,8 +30,8 @@ func DecryptSecret(secret string) (string, error) {
 	return secret, nil
 }
 
-func DecryptPrivatePEM(message string, key string) (string, error) {
-	block, err := DecodePem(key)
+func decryptPrivatePEM(message string, key string) (string, error) {
+	block, err := decodePem(key)
 	if err != nil {
 		return "", err
 	}
@@ -40,7 +40,7 @@ func DecryptPrivatePEM(message string, key string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	ct, err := RSA_OAEP_Decrypt(message, *privateKey)
+	ct, err := rsaOaepDecrypt(message, *privateKey)
 	if err != nil {
 		return "", err
 	}
@@ -48,7 +48,7 @@ func DecryptPrivatePEM(message string, key string) (string, error) {
 	return ct, nil
 }
 
-func RSA_OAEP_Decrypt(cipherText string, privKey rsa.PrivateKey) (string, error) {
+func rsaOaepDecrypt(cipherText string, privKey rsa.PrivateKey) (string, error) {
 	ct, _ := base64.StdEncoding.DecodeString(cipherText)
 	label := []byte("OAEP Encrypted")
 	rng := rand.Reader
@@ -61,7 +61,7 @@ func RSA_OAEP_Decrypt(cipherText string, privKey rsa.PrivateKey) (string, error)
 	return string(plaintext), nil
 }
 
-func DecodePem(key string) (*pem.Block, error) {
+func decodePem(key string) (*pem.Block, error) {
 	keyraw, err := base64.StdEncoding.DecodeString(key)
 	if err != nil {
 		return nil, err

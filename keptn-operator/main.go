@@ -23,10 +23,10 @@ import (
 
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnstage_controller"
 
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnsequence_controller"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnsequenceController"
 
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnproject_controller"
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnsequenceexecution_controller"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnsequenceexecutionController"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnservice_controller"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnshipyard_controller"
 
@@ -103,7 +103,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "KeptnProject")
 		os.Exit(1)
 	}
-	if err = (&keptnsequenceexecution_controller.KeptnSequenceExecutionReconciler{
+	if err = (&keptnsequenceexecutionController.KeptnSequenceExecutionReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("keptnsequenceexecution-controller"),
@@ -120,7 +120,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&keptnsequence_controller.KeptnSequenceReconciler{
+	if err = (&keptnsequenceController.KeptnSequenceReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {

@@ -68,6 +68,15 @@ type metadata struct {
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptngitrepositories/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptngitrepositories/finalizers,verbs=update
 
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+// TODO(user): Modify the Reconcile function to compare the state specified by
+// the KeptnGitRepository object against the actual cluster state, and then
+// perform operations to make the cluster state reflect the state specified by
+// the user.
+//
+// For more details, check Reconcile and its Result here:
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
 func (r *KeptnGitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.Log.Info("Reconciling KeptnGitRepository")
 
@@ -137,7 +146,7 @@ func (r *KeptnGitRepositoryReconciler) updateStatusResult(ctx context.Context, k
 }
 
 func (r *KeptnGitRepositoryReconciler) getGitCredentialsProject(project *keptnshv1.KeptnProject) (*gitCredentials, error) {
-	secret, err := DecryptSecret(project.Spec.Password)
+	secret, err := decryptSecret(project.Spec.Password)
 	if err != nil {
 		fmt.Println("could not decrypt secret")
 		return &gitCredentials{}, err
@@ -155,7 +164,7 @@ func (r *KeptnGitRepositoryReconciler) getGitCredentialsProject(project *keptnsh
 }
 
 func (r *KeptnGitRepositoryReconciler) getGitCredentials(gitrepo *keptnshv1.KeptnGitRepository) (*gitCredentials, error) {
-	secret, err := DecryptSecret(gitrepo.Spec.Token)
+	secret, err := decryptSecret(gitrepo.Spec.Token)
 	if err != nil {
 		fmt.Println("could not decrypt secret")
 		return &gitCredentials{}, err

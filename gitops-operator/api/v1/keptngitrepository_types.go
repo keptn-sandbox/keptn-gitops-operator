@@ -21,8 +21,10 @@ import (
 )
 
 const (
+	// KeptnGitRepositoryPhaseSuccessful defines the value for a successful action
 	KeptnGitRepositoryPhaseSuccessful = "Successful"
-	KeptnGitRepositoryPhaseFailed     = "Failed"
+	// KeptnGitRepositoryPhaseFailed defines the value for a failed action
+	KeptnGitRepositoryPhaseFailed = "Failed"
 )
 
 // KeptnGitRepositorySpec defines the desired state of KeptnGitRepository

@@ -25,9 +25,7 @@ import (
 
 // KeptnSequenceSpec defines the desired state of KeptnSequence
 type KeptnSequenceSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this filee
-	// Foo is an example field of KeptnSequence. Edit keptnsequence_types.go to remove/update
+	// Sequence defines the Keptn Sequence this is referring to
 	Sequence Sequence `json:"sequence"`
 }
 
@@ -45,7 +43,9 @@ type KeptnSequence struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   KeptnSequenceSpec   `json:"spec,omitempty"`
+	// Spec contains the specification of this sequence
+	Spec KeptnSequenceSpec `json:"spec,omitempty"`
+	// Status contains information about the current status of this KeptnSequence
 	Status KeptnSequenceStatus `json:"status,omitempty"`
 }
 
