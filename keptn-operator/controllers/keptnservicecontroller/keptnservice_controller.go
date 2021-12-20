@@ -174,7 +174,7 @@ func (r *KeptnServiceReconciler) deleteKeptnService(ctx context.Context, namespa
 		Timeout: 30 * time.Second,
 	}
 
-	keptnToken := utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, namespace)
+	keptnToken := utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, namespace)
 
 	request, err := nethttp.NewRequest("DELETE", r.KeptnAPI+"/controlPlane/v1/project/"+keptnservice.Spec.Project+"/service/"+keptnservice.Name, bytes.NewBuffer(nil))
 	if err != nil {
@@ -201,7 +201,7 @@ func (r *KeptnServiceReconciler) createService(ctx context.Context, service stri
 		"serviceName": service,
 	})
 
-	keptnToken := utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, namespace)
+	keptnToken := utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, namespace)
 
 	request, err := nethttp.NewRequest("POST", r.KeptnAPI+"/controlPlane/v1/project/"+project+"/service", bytes.NewBuffer(data))
 	if err != nil {
@@ -222,8 +222,8 @@ func (r *KeptnServiceReconciler) createService(ctx context.Context, service stri
 
 func (r *KeptnServiceReconciler) checkIfServiceExists(ctx context.Context, req ctrl.Request, project string, service string) bool {
 
-	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
-	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.KeptnAPI, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
+	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
+	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.KeptnAPI, utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// KeptnReconcile contains the struct needed for every reconciler of the Keptn Operator
 type KeptnReconcile struct {
 	client.Client
 

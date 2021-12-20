@@ -29,7 +29,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-// KeptnScheduledExecReconcilerf reconciles a KeptnScheduledExec object
+// KeptnScheduledExecReconciler reconciles a KeptnScheduledExec object
 type KeptnScheduledExecReconciler struct {
 	utils.KeptnReconcile
 }

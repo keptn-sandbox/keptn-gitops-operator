@@ -172,7 +172,7 @@ func (r *KeptnProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *KeptnProjectReconciler) checkKeptnProjectExists(ctx context.Context, req ctrl.Request, project string) bool {
 
-	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
+	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {
@@ -202,7 +202,7 @@ func (r *KeptnProjectReconciler) deleteKeptnProject(ctx context.Context, namespa
 		Timeout: 30 * time.Second,
 	}
 
-	keptnToken := utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, namespace)
+	keptnToken := utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, namespace)
 
 	request, err := nethttp.NewRequest("DELETE", r.KeptnAPI+"/controlPlane/v1/project/"+keptnproject.Name, bytes.NewBuffer(nil))
 	if err != nil {
@@ -239,7 +239,7 @@ func (r *KeptnProjectReconciler) createProject(ctx context.Context, project *api
 		"name":         project.Name,
 	})
 
-	keptnToken := utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, namespace)
+	keptnToken := utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, namespace)
 
 	request, err := nethttp.NewRequest("POST", r.KeptnAPI+"/controlPlane/v1/project", bytes.NewBuffer(data))
 	if err != nil {

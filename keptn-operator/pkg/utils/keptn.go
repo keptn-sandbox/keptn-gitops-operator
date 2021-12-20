@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// FilterProjects returns an array of projects with the specified name
 func FilterProjects(projects []*models.Project, projectName string) []*models.Project {
 	filteredProjects := make([]*models.Project, 0)
 	for _, project := range projects {
@@ -19,6 +20,7 @@ func FilterProjects(projects []*models.Project, projectName string) []*models.Pr
 	return filteredProjects
 }
 
+// FilterServices returns an array of services with the specified name
 func FilterServices(services []*models.Service, serviceName string) []*models.Service {
 	filteredServices := make([]*models.Service, 0)
 	for _, service := range services {
@@ -29,7 +31,8 @@ func FilterServices(services []*models.Service, serviceName string) []*models.Se
 	return filteredServices
 }
 
-func GetKeptnToken(client client.Client, logger logr.Logger, ctx context.Context, namespace string) string {
+// GetKeptnToken returns the Keptn API Token in a Namespace
+func GetKeptnToken(ctx context.Context, client client.Client, logger logr.Logger, namespace string) string {
 	keptnToken := &corev1.Secret{}
 	err := client.Get(ctx, types.NamespacedName{Name: "keptn-api-token", Namespace: namespace}, keptnToken)
 	if err != nil {

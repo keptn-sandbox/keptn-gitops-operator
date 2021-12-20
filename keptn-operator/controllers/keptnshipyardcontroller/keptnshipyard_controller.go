@@ -217,7 +217,7 @@ func (r *KeptnShipyardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *KeptnShipyardReconciler) checkKeptnProjectExists(ctx context.Context, req ctrl.Request, project string) bool {
 
-	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
+	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {
@@ -247,7 +247,7 @@ func (r *KeptnShipyardReconciler) updateShipyard(ctx context.Context, namespace 
 
 	data, _ := json.Marshal(createProject)
 
-	keptnToken := utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, namespace)
+	keptnToken := utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, namespace)
 
 	request, err := nethttp.NewRequest("PUT", r.KeptnAPI+"/controlPlane/v1/project", bytes.NewBuffer(data))
 	if err != nil {
