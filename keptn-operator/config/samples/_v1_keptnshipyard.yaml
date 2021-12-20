@@ -1,0 +1,8 @@
+apiVersion: keptn.sh/v1
+kind: KeptnShipyard
+metadata:
+  name: keptnshipyard-sample
+spec:
+  project: "innoday"
+  stages:
+    - stageRef: "dev"

@@ -1,0 +1,10 @@
+## Append samples you want in your CSV to this file as resources ##
+resources:
+- _v1_keptnshipyard.yaml
+- _v1_keptnproject.yaml
+- _v1_keptnsequenceexecution.yaml
+- _v1_keptnservice.yaml
+- _v1_keptnstage.yaml
+- _v1_keptnsequence.yaml
+- _v1_keptnscheduledexec.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples

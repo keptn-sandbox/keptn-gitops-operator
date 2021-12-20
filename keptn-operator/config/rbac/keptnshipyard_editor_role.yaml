@@ -1,0 +1,24 @@
+# permissions for end users to edit keptnshipyards.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keptnshipyard-editor-role
+rules:
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnshipyards
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnshipyards/status
+  verbs:
+  - get

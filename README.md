@@ -1,71 +1,53 @@
-# keptn-gitops-operator
+# Keptn GitOps Operators
+The operators in this repository make keptn configurable via Custom Resources and via git.
 
-> **DISCLAIMER**: This project is a proof-of-concept and was developed and is not complete and not supported. The CRDs as well as the backing mechanisms may change over time. Please use with care (currently it didn't break anything)!
+## Compatibility Matrix
 
+| Author           | Keptn Version | [Keptn GitOps Operator Images](https://hub.docker.com/r/checkelmann/gitlab-service/tags) |
+|:-----------------|:---------------------:|:----------------------------------------------------------------------------------------:|
+| @thschue         |      0.11.x         |    keptnsandbox/gitops-operator:0.1.0-dev <br> keptnsandbox/keptn-operator:0.1.0-dev     |
 
-## Idea
-This operator makes keptn (almost) configurable by git. It introduces Custom Resource Definitions for KeptnProjects and KeptnServices.
-
-If a Keptn Project CR is available, the operator tries to find the projects GitHub secret (as stored by keptn) and looks for a `.keptn/config.yaml` file in the main branch of the repository.
-
-## Installation
-To run this from your machine and you already installed kubebuilder, use:
-```
-make install
-make run
-```
-
-Otherwise (unless the installation mechanism is ready):
-
-**A Helm Chart will be created soon**
-
-Assign a lot of permissions to the default user (will be fixed when using helm):
-```
-kubectl create clusterrolebinding sa-admin --clusterrole=cluster-admin --serviceaccount=<namespace>:default
-```
-
-Install Custom Resource Definitions:
-```
-make install
-```
-
-Run the operator:
-```
-kubectl run keptn-operator --image=keptncontrib/keptn-gitops-operator:0.0.1-dev-init --image-pull-policy='Always'
-```
 
 ## Prerequisites
+* In order to be able to create and delete stages, the keptn operator depends on a patched version of the configuration-service and the shipyard controller
 
-* The project is already added to keptn and a git upstream configured (see https://keptn.sh/docs/0.8.x/manage/git_upstream/)
-* The operator is installed
-
-## Usage:
-To use the gitops operator you need knowledge about the keptn git repository (e.g. where keptn expects the helm charts and a simple configuration file (.keptn/config.yaml in the main branch) which might look as follows:
-
-```
-metadata:
-  initbranch: "dev"
-
-services:
-- name: "carts"
-  triggerevent: "sh.keptn.event.integration.artifact-delivery.triggered"
+## Installation
+```shell
+helm install <TBD>
 ```
 
-The branch specified by `initbranch` will be watched for changes. If there are changes on this branch, the deployment will be triggered using the event specified under `services[*].name.triggerevent`. The services specified here will be created (and deleted) in keptn.
+## Keptn Operator
+The operator introduces a set of custom resources to make keptn configurable via Kubernetes CRs.
 
-After checking in this file, a Custom Resource for the corresponding Keptn Project should be created:
+### Custom Resources
+|     Kind      |                    Purpose                    |                                Sample                                |
+|:-------------:|:---------------------------------------------:|:--------------------------------------------------------------------:|
+| KeptnProject  |           Configure a Keptn Project           |           [./samples/project.yaml](./samples/project.yaml)           |
+| KeptnService  |           Configure a Keptn Service           |           [./samples/service.yaml](./samples/service.yaml)           |
+| KeptnSequence | Define a Keptn Sequence to be used in a Stage |          [./samples/sequence.yaml](./samples/sequence.yaml)          |
+| KeptnStage   |  Define a Keptn Stage |             [./samples/stage.yaml](./samples/stage.yaml)             |
+| KeptnSequenceExecution | Triggers a Keptn Sequence Execution | [./samples/sequenceexecution.yaml](./samples/sequenceexecution.yaml) |
 
-Example:
-```
-apiVersion: keptn.operator.keptn.sh/v1
-kind: KeptnProject
-metadata:
-  name: my-keptn-project
-spec:
-  project: my-keptn-project
-```
+### Usage:
+* Create an empty upstream repository
+* Create a KeptnProject Custom Resource according to the [sample](./samples/project.yaml). You can specify the secret to your secret either in clear text or RSA as an RSA encrypted string (prefix this with rsa:)
+* Create your keptn services according to the [sample](./samples/service.yaml). Ensure that you added the correct project.
+* Create stages, and sequences. Ensure that you created the sequences you are referring to in the stage custom resources
+* Define a sequence execution to trigger a keptn event
 
-After applying this, the services defined in the config file will be managed in a GitOps way and the events specified will be triggered on a git push to the keptn configuration repository.
+## GitOps Operator
+The operator looks for configuration in a git repository, applies Keptn Custom Resources (see above) and pushes artifacts to the Keptn Upstream Repository.
+
+### Custom Resources
+|     Kind      |                         Purpose                          |                                Sample                                |
+|:-------------:|:--------------------------------------------------------:|:--------------------------------------------------------------------:|
+| KeptnGitRepository  | Defines a Repository containing your Keptn Configuration |           [./samples/gitrepo.yaml](./samples/gitrepo.yaml)           |
+
+### Usage:
+* Create an empty upstream repository
+* Create a KeptnGitRepository Custom Resource according to the [sample](./samples/gitrepo.yaml). You can specify the secret to your secret either in clear text or RSA as an RSA encrypted string (prefix this with rsa:)
+* Add your keptn configuration in the `.keptn` directory of your repository
+
 
 ## Contributions
 * If there are additional use-cases which might be covered, please raise a PR
