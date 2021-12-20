@@ -19,18 +19,16 @@ package keptnsequenceController
 import (
 	"context"
 	keptnshv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // KeptnSequenceReconciler reconciles a KeptnSequence object
 type KeptnSequenceReconciler struct {
-	client.Client
-	Scheme *runtime.Scheme
+	utils.KeptnReconcile
 }
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnsequences,verbs=get;list;watch;create;update;patch;delete

@@ -14,39 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package keptnservice_controller
+package keptnServiceController
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-logr/logr"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
 	nethttp "net/http"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	apiv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
 	apiutils "github.com/keptn/go-utils/pkg/api/utils"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // KeptnServiceReconciler reconciles a KeptnService object
 type KeptnServiceReconciler struct {
-	client.Client
-	Scheme         *runtime.Scheme
-	Recorder       record.EventRecorder
-	ReqLogger      logr.Logger
-	keptnApi       string
-	keptnApiScheme string
+	utils.KeptnReconcile
 }
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnservices,verbs=get;list;watch;create;update;patch;delete
@@ -67,14 +57,14 @@ func (r *KeptnServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	r.ReqLogger.Info("Reconciling KeptnService")
 
 	var ok bool
-	r.keptnApi, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
+	r.KeptnAPI, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
 	if !ok {
 		r.ReqLogger.Info("KEPTN_API_ENDPOINT is not present, defaulting to api-gateway-nginx")
-		r.keptnApi = "http://api-gateway-nginx/api"
+		r.KeptnAPI = "http://api-gateway-nginx/api"
 	}
 
-	if r.keptnApiScheme == "" {
-		r.keptnApiScheme = "http"
+	if r.KeptnAPIScheme == "" {
+		r.KeptnAPIScheme = "http"
 	}
 	keptnservice := &apiv1.KeptnService{}
 
@@ -186,7 +176,7 @@ func (r *KeptnServiceReconciler) deleteKeptnService(ctx context.Context, namespa
 
 	keptnToken := utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, namespace)
 
-	request, err := nethttp.NewRequest("DELETE", r.keptnApi+"/controlPlane/v1/project/"+keptnservice.Spec.Project+"/service/"+keptnservice.Name, bytes.NewBuffer(nil))
+	request, err := nethttp.NewRequest("DELETE", r.KeptnAPI+"/controlPlane/v1/project/"+keptnservice.Spec.Project+"/service/"+keptnservice.Name, bytes.NewBuffer(nil))
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not delete service "+keptnservice.Name)
 	}
@@ -213,7 +203,7 @@ func (r *KeptnServiceReconciler) createService(ctx context.Context, service stri
 
 	keptnToken := utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, namespace)
 
-	request, err := nethttp.NewRequest("POST", r.keptnApi+"/controlPlane/v1/project/"+project+"/service", bytes.NewBuffer(data))
+	request, err := nethttp.NewRequest("POST", r.KeptnAPI+"/controlPlane/v1/project/"+project+"/service", bytes.NewBuffer(data))
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not create service "+service)
 		return 0, err
@@ -232,8 +222,8 @@ func (r *KeptnServiceReconciler) createService(ctx context.Context, service stri
 
 func (r *KeptnServiceReconciler) checkIfServiceExists(ctx context.Context, req ctrl.Request, project string, service string) bool {
 
-	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.keptnApi, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.keptnApiScheme)
-	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.keptnApi, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.keptnApiScheme)
+	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
+	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.KeptnAPI, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {

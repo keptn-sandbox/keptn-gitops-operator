@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package keptnshipyard_controller
+package keptnShipyardController
 
 import (
 	"bytes"
@@ -28,19 +28,15 @@ import (
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
 	nethttp "net/http"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"time"
 
 	apiv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	keptnapi "github.com/keptn/go-utils/pkg/api/models"
 	keptnv2 "github.com/keptn/go-utils/pkg/lib/v0_2_0"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 const defaultKeptnControlPlaneAPIURL = "http://shipyard-controller.keptn:8080"
@@ -49,12 +45,7 @@ const shipyardAPIVersion = "spec.keptn.sh/0.2.2"
 
 // KeptnShipyardReconciler reconciles a KeptnShipyard object
 type KeptnShipyardReconciler struct {
-	client.Client
-	Scheme         *runtime.Scheme
-	Recorder       record.EventRecorder
-	ReqLogger      logr.Logger
-	keptnApi       string
-	keptnApiScheme string
+	utils.KeptnReconcile
 }
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnshipyards,verbs=get;list;watch;create;update;patch;delete
@@ -78,14 +69,14 @@ func (r *KeptnShipyardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	r.ReqLogger.Info("Reconciling KeptnShipyard")
 
 	var ok bool
-	r.keptnApi, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
+	r.KeptnAPI, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
 	if !ok {
 		r.ReqLogger.Info("KEPTN_API_ENDPOINT is not present, defaulting to api-gateway-nginx")
-		r.keptnApi = "http://api-gateway-nginx/api"
+		r.KeptnAPI = "http://api-gateway-nginx/api"
 	}
 
-	if r.keptnApiScheme == "" {
-		r.keptnApiScheme = "http"
+	if r.KeptnAPIScheme == "" {
+		r.KeptnAPIScheme = "http"
 	}
 
 	// your logic here
@@ -226,7 +217,7 @@ func (r *KeptnShipyardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *KeptnShipyardReconciler) checkKeptnProjectExists(ctx context.Context, req ctrl.Request, project string) bool {
 
-	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.keptnApi, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.keptnApiScheme)
+	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {
@@ -258,7 +249,7 @@ func (r *KeptnShipyardReconciler) updateShipyard(ctx context.Context, namespace 
 
 	keptnToken := utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, namespace)
 
-	request, err := nethttp.NewRequest("PUT", r.keptnApi+"/controlPlane/v1/project", bytes.NewBuffer(data))
+	request, err := nethttp.NewRequest("PUT", r.KeptnAPI+"/controlPlane/v1/project", bytes.NewBuffer(data))
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not update shipyard for project "+project)
 		return 0, err

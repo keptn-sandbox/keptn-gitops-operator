@@ -82,6 +82,7 @@ type Trigger struct {
 	Selector Selector `json:"selector,omitempty" yaml:"selector,omitempty"`
 }
 
+// Selector defines criteria for a sequence to get triggered
 type Selector struct {
 	Match map[string]string `json:"match" yaml:"match"`
 }

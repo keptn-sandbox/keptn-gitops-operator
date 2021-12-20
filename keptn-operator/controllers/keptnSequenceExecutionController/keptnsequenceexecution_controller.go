@@ -14,38 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package keptnsequenceexecutionController
+package keptnSequenceExecutionController
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-logr/logr"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
 	apiutils "github.com/keptn/go-utils/pkg/api/utils"
 	"io"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
 	nethttp "net/http"
 	"os"
 	"time"
 
 	apiv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // KeptnSequenceExecutionReconciler reconciles a KeptnSequenceExecution object
 type KeptnSequenceExecutionReconciler struct {
-	client.Client
-	Scheme         *runtime.Scheme
-	Recorder       record.EventRecorder
-	ReqLogger      logr.Logger
-	keptnApi       string
-	keptnApiScheme string
+	utils.KeptnReconcile
 }
 
 type KeptnTriggerEvent struct {
@@ -91,14 +82,14 @@ func (r *KeptnSequenceExecutionReconciler) Reconcile(ctx context.Context, req ct
 	r.ReqLogger.Info("Reconciling KeptnSequenceExecution")
 
 	var ok bool
-	r.keptnApi, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
+	r.KeptnAPI, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
 	if !ok {
 		r.ReqLogger.Info("KEPTN_API_ENDPOINT is not present, defaulting to api-gateway-nginx")
-		r.keptnApi = "http://api-gateway-nginx/api"
+		r.KeptnAPI = "http://api-gateway-nginx/api"
 	}
 
-	if r.keptnApiScheme == "" {
-		r.keptnApiScheme = "http"
+	if r.KeptnAPIScheme == "" {
+		r.KeptnAPIScheme = "http"
 	}
 
 	kse := &apiv1.KeptnSequenceExecution{}
@@ -189,8 +180,8 @@ func (r *KeptnSequenceExecutionReconciler) checkKeptnProject(ctx context.Context
 
 func (r *KeptnSequenceExecutionReconciler) checkIfServiceExists(ctx context.Context, req ctrl.Request, project string, service string) bool {
 
-	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.keptnApi, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.keptnApiScheme)
-	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.keptnApi, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.keptnApiScheme)
+	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
+	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.KeptnAPI, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {
@@ -261,7 +252,7 @@ func (r *KeptnSequenceExecutionReconciler) triggerTask(ctx context.Context, exec
 	keptnToken := utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, namespace)
 
 	r.ReqLogger.Info("Triggering Event " + exec.Spec.Event + " for service " + exec.Spec.Service)
-	request, err := nethttp.NewRequest("POST", r.keptnApi+"/v1/event", bytes.NewBuffer(data))
+	request, err := nethttp.NewRequest("POST", r.KeptnAPI+"/v1/event", bytes.NewBuffer(data))
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not trigger event "+exec.Spec.Event+" for service "+exec.Spec.Service)
 		return err, ""

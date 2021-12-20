@@ -14,20 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package keptnproject_controller
+package keptnProjectController
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-logr/logr"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
 	apiutils "github.com/keptn/go-utils/pkg/api/utils"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
 	nethttp "net/http"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -35,19 +33,13 @@ import (
 
 	apiv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
 
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // KeptnProjectReconciler reconciles a KeptnProject object
 type KeptnProjectReconciler struct {
-	client.Client
-	Scheme         *runtime.Scheme
-	Recorder       record.EventRecorder
-	ReqLogger      logr.Logger
-	keptnApi       string
-	keptnApiScheme string
+	utils.KeptnReconcile
 }
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnprojects,verbs=get;list;watch;create;update;patch;delete
@@ -68,14 +60,14 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	r.ReqLogger.Info("Reconciling Project")
 
 	var ok bool
-	r.keptnApi, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
+	r.KeptnAPI, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
 	if !ok {
 		r.ReqLogger.Info("KEPTN_API_ENDPOINT is not present, defaulting to api-gateway-nginx")
-		r.keptnApi = "http://api-gateway-nginx/api"
+		r.KeptnAPI = "http://api-gateway-nginx/api"
 	}
 
-	if r.keptnApiScheme == "" {
-		r.keptnApiScheme = "http"
+	if r.KeptnAPIScheme == "" {
+		r.KeptnAPIScheme = "http"
 	}
 
 	keptnproject := &apiv1.KeptnProject{}
@@ -180,7 +172,7 @@ func (r *KeptnProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *KeptnProjectReconciler) checkKeptnProjectExists(ctx context.Context, req ctrl.Request, project string) bool {
 
-	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.keptnApi, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.keptnApiScheme)
+	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {
@@ -212,7 +204,7 @@ func (r *KeptnProjectReconciler) deleteKeptnProject(ctx context.Context, namespa
 
 	keptnToken := utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, namespace)
 
-	request, err := nethttp.NewRequest("DELETE", r.keptnApi+"/controlPlane/v1/project/"+keptnproject.Name, bytes.NewBuffer(nil))
+	request, err := nethttp.NewRequest("DELETE", r.KeptnAPI+"/controlPlane/v1/project/"+keptnproject.Name, bytes.NewBuffer(nil))
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not delete Project "+keptnproject.Name)
 	}
@@ -249,7 +241,7 @@ func (r *KeptnProjectReconciler) createProject(ctx context.Context, project *api
 
 	keptnToken := utils.GetKeptnToken(r.Client, r.ReqLogger, ctx, namespace)
 
-	request, err := nethttp.NewRequest("POST", r.keptnApi+"/controlPlane/v1/project", bytes.NewBuffer(data))
+	request, err := nethttp.NewRequest("POST", r.KeptnAPI+"/controlPlane/v1/project", bytes.NewBuffer(data))
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not create project "+project.Name)
 		return 0, err

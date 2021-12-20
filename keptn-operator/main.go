@@ -18,17 +18,17 @@ package main
 
 import (
 	"flag"
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnscheduledexec_controller"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnScheduledExecController"
 	"os"
 
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnstage_controller"
 
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnsequenceController"
 
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnproject_controller"
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnsequenceexecutionController"
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnservice_controller"
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnshipyard_controller"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnProjectController"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnSequenceExecutionController"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnServiceController"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnShipyardController"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -87,7 +87,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&keptnshipyard_controller.KeptnShipyardReconciler{
+	if err = (&keptnShipyardController.KeptnShipyardReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("keptnshipyard-controller"),
@@ -95,7 +95,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "KeptnShipyard")
 		os.Exit(1)
 	}
-	if err = (&keptnproject_controller.KeptnProjectReconciler{
+	if err = (&keptnProjectController.KeptnProjectReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("keptnproject-controller"),
@@ -103,7 +103,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "KeptnProject")
 		os.Exit(1)
 	}
-	if err = (&keptnsequenceexecutionController.KeptnSequenceExecutionReconciler{
+	if err = (&keptnSequenceExecutionController.KeptnSequenceExecutionReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("keptnsequenceexecution-controller"),
@@ -111,7 +111,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "KeptnSequenceExecution")
 		os.Exit(1)
 	}
-	if err = (&keptnservice_controller.KeptnServiceReconciler{
+	if err = (&keptnServiceController.KeptnServiceReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("keptnservice-controller"),
@@ -134,7 +134,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "KeptnStage")
 		os.Exit(1)
 	}
-	if err = (&keptnscheduledexec_controller.KeptnScheduledExecReconciler{
+	if err = (&keptnScheduledExecController.KeptnScheduledExecReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("keptnservice-controller"),

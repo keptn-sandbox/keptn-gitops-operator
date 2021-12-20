@@ -29,10 +29,13 @@ type KeptnShipyardSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 	Project string `json:"project" yaml:"project"`
 
+	// Stages define the stages included in this shipyard
 	Stages []KeptnShipyardStage `json:"stages" yaml:"stages,omitempty"`
 }
 
+// KeptnShipyardStage contains the reference to the KeptnStage object
 type KeptnShipyardStage struct {
+	// StageRef contains the reference to the KeptnStage object
 	StageRef string `json:"stageRef" yaml:"stageRef"`
 }
 
@@ -63,6 +66,7 @@ type KeptnShipyardList struct {
 	Items           []KeptnShipyard `json:"items"`
 }
 
+// CreateProject contains the information needed to create a new keptn project
 type CreateProject struct {
 
 	// git remote URL

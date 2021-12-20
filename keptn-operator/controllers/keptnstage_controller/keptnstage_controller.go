@@ -19,18 +19,16 @@ package keptnstage_controller
 import (
 	"context"
 	keptnshv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // KeptnStageReconciler reconciles a KeptnStage object
 type KeptnStageReconciler struct {
-	client.Client
-	Scheme *runtime.Scheme
+	utils.KeptnReconcile
 }
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnstages,verbs=get;list;watch;create;update;patch;delete

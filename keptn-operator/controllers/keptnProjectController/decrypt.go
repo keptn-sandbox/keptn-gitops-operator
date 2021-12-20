@@ -1,4 +1,4 @@
-package keptnproject_controller
+package keptnProjectController
 
 import (
 	"crypto/rand"

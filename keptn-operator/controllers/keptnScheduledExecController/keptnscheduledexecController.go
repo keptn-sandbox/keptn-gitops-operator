@@ -14,32 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package keptnscheduledexec_controller
+package keptnScheduledExecController
 
 import (
 	"context"
 	"fmt"
-	"github.com/go-logr/logr"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/record"
 	"os"
 	"time"
 
 	apiv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// KeptnScheduledExecReconciler reconciles a KeptnScheduledExec object
+// KeptnScheduledExecReconcilerf reconciles a KeptnScheduledExec object
 type KeptnScheduledExecReconciler struct {
-	client.Client
-	Scheme         *runtime.Scheme
-	Recorder       record.EventRecorder
-	ReqLogger      logr.Logger
-	keptnApi       string
-	keptnApiScheme string
+	utils.KeptnReconcile
 }
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnscheduledexecs,verbs=get;list;watch;create;update;patch;delete
@@ -60,14 +52,14 @@ func (r *KeptnScheduledExecReconciler) Reconcile(ctx context.Context, req ctrl.R
 	r.ReqLogger.Info("Reconciling KeptnScheduledExec")
 
 	var ok bool
-	r.keptnApi, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
+	r.KeptnAPI, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
 	if !ok {
 		r.ReqLogger.Info("KEPTN_API_ENDPOINT is not present, defaulting to api-gateway-nginx")
-		r.keptnApi = "http://api-gateway-nginx/api"
+		r.KeptnAPI = "http://api-gateway-nginx/api"
 	}
 
-	if r.keptnApiScheme == "" {
-		r.keptnApiScheme = "http"
+	if r.KeptnAPIScheme == "" {
+		r.KeptnAPIScheme = "http"
 	}
 
 	keptnexec := &apiv1.KeptnScheduledExec{}
