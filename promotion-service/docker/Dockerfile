@@ -38,7 +38,7 @@ RUN GOOS=linux go build -i -ldflags '-linkmode=external' $BUILDFLAGS -v -o promo
 
 # Use a Docker multi-stage build to create a lean production image.
 # https://docs.docker.com/develop/develop-images/multistage-build/#use-multi-stage-builds
-FROM alpine:3.11
+FROM alpine:3.15
 ENV ENV=production
 
 # Install extra packages
