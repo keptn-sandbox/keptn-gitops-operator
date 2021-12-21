@@ -101,6 +101,9 @@ jobs:
     name: Unit Tests
     needs: prepare_ci_run
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        service: ["keptn-operator","gitops-operator"]
     steps:
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
@@ -115,13 +118,10 @@ jobs:
         with:
           env-file: .ci_env
 
-      - name: Test Keptn Operator
+      - name: Run Unit Tests
         run: go test -coverprofile=coverage.txt -covermode=atomic -v ./...
-        working-directory: keptn-operator/.
+        working-directory: ${{ matrix.service }}/.
 
-      - name: Test GitOps Operator
-        run: go test -coverprofile=coverage.txt -covermode=atomic -v ./...
-        working-directory: gitops-operator/.
 
   ############################################################################
   # Build Docker Image                                                      #
@@ -130,6 +130,9 @@ jobs:
     needs: [prepare_ci_run, unit-tests]
     name: Docker Build
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        service: [ "keptn-operator","gitops-operator" ]
     env:
       BRANCH: ${{ needs.prepare_ci_run.outputs.BRANCH }}
       VERSION: ${{ needs.prepare_ci_run.outputs.VERSION }}
@@ -161,18 +164,9 @@ jobs:
         uses: keptn/gh-action-build-docker-image@master
         with:
           VERSION: ${{ env.VERSION }}
-          IMAGE_NAME: "${{ env.DOCKER_ORGANIZATION }}/${{ env.GITOP_IMAGE }}"
+          IMAGE_NAME: "${{ env.DOCKER_ORGANIZATION }}/${{ matrix.service }}"
           DATETIME: ${{ env.DATETIME }}
-          context: gitops-operator
-
-      - id: docker_build_keptnoperator
-        name: Docker Build Keptn Operator
-        uses: keptn/gh-action-build-docker-image@master
-        with:
-          VERSION: ${{ env.VERSION }}
-          IMAGE_NAME: "${{ env.DOCKER_ORGANIZATION }}/${{ env.KEPTNOP_IMAGE }}"
-          DATETIME: ${{ env.DATETIME }}
-          context: keptn-operator
+          context: ${{ matrix.service }}/.
 
       - id: create_docker_build_report
         name: Create Docker Build Report
