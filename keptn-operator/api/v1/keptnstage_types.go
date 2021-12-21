@@ -28,8 +28,10 @@ type KeptnStageSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of KeptnStage. Edit keptnstage_types.go to remove/update
-	Project  string                 `json:"project"`
+	// Project defines the Keptn Project this stage is assigned to
+	Project string `json:"project"`
+
+	// Sequence defines an array of sequences this KeptnStage will use
 	Sequence []KeptnSequenceRefSpec `json:"sequence"`
 }
 
@@ -40,7 +42,9 @@ type KeptnStageStatus struct {
 }
 
 type KeptnSequenceRefSpec struct {
-	Type        string `json:"type"`
+	// Type describes how the sequence is defined in this KeptnSequenceRefSpec
+	Type string `json:"type"`
+	// SequenceRef is used to set a reference to a KeptnSequence
 	SequenceRef string `json:"sequenceRef,omitempty"`
 }
 
