@@ -21,13 +21,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/go-logr/logr"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
 	apiutils "github.com/keptn/go-utils/pkg/api/utils"
 	"io"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	nethttp "net/http"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
 	apiv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
@@ -36,7 +40,18 @@ import (
 
 // KeptnSequenceExecutionReconciler reconciles a KeptnSequenceExecution object
 type KeptnSequenceExecutionReconciler struct {
-	utils.KeptnReconcile
+	client.Client
+
+	// Scheme contains the scheme of this controller
+	Scheme *runtime.Scheme
+	// Recorder contains the Recorder of this controller
+	Recorder record.EventRecorder
+	// ReqLogger contains the Logger of this controller
+	ReqLogger logr.Logger
+	// KeptnAPI contains the URL of the Keptn Control Plane API
+	KeptnAPI string
+	// KeptnAPIScheme contains the Scheme (http/https) of the Keptn Control Plane API
+	KeptnAPIScheme string
 }
 
 // KeptnTriggerEvent describes a Keptn Event which should be triggered

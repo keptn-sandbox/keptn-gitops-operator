@@ -19,10 +19,13 @@ package keptnscheduledexeccontroller
 import (
 	"context"
 	"fmt"
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
 	apiv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
@@ -31,7 +34,18 @@ import (
 
 // KeptnScheduledExecReconciler reconciles a KeptnScheduledExec object
 type KeptnScheduledExecReconciler struct {
-	utils.KeptnReconcile
+	client.Client
+
+	// Scheme contains the scheme of this controller
+	Scheme *runtime.Scheme
+	// Recorder contains the Recorder of this controller
+	Recorder record.EventRecorder
+	// ReqLogger contains the Logger of this controller
+	ReqLogger logr.Logger
+	// KeptnAPI contains the URL of the Keptn Control Plane API
+	KeptnAPI string
+	// KeptnAPIScheme contains the Scheme (http/https) of the Keptn Control Plane API
+	KeptnAPIScheme string
 }
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnscheduledexecs,verbs=get;list;watch;create;update;patch;delete

@@ -18,8 +18,11 @@ package keptnstagecontroller
 
 import (
 	"context"
+	"github.com/go-logr/logr"
 	keptnshv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -28,7 +31,18 @@ import (
 
 // KeptnStageReconciler reconciles a KeptnStage object
 type KeptnStageReconciler struct {
-	utils.KeptnReconcile
+	client.Client
+
+	// Scheme contains the scheme of this controller
+	Scheme *runtime.Scheme
+	// Recorder contains the Recorder of this controller
+	Recorder record.EventRecorder
+	// ReqLogger contains the Logger of this controller
+	ReqLogger logr.Logger
+	// KeptnAPI contains the URL of the Keptn Control Plane API
+	KeptnAPI string
+	// KeptnAPIScheme contains the Scheme (http/https) of the Keptn Control Plane API
+	KeptnAPIScheme string
 }
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnstages,verbs=get;list;watch;create;update;patch;delete

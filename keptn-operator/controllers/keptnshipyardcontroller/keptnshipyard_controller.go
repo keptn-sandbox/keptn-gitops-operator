@@ -27,9 +27,12 @@ import (
 	apiutils "github.com/keptn/go-utils/pkg/api/utils"
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	nethttp "net/http"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"time"
 
@@ -45,7 +48,18 @@ const shipyardAPIVersion = "spec.keptn.sh/0.2.2"
 
 // KeptnShipyardReconciler reconciles a KeptnShipyard object
 type KeptnShipyardReconciler struct {
-	utils.KeptnReconcile
+	client.Client
+
+	// Scheme contains the scheme of this controller
+	Scheme *runtime.Scheme
+	// Recorder contains the Recorder of this controller
+	Recorder record.EventRecorder
+	// ReqLogger contains the Logger of this controller
+	ReqLogger logr.Logger
+	// KeptnAPI contains the URL of the Keptn Control Plane API
+	KeptnAPI string
+	// KeptnAPIScheme contains the Scheme (http/https) of the Keptn Control Plane API
+	KeptnAPIScheme string
 }
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnshipyards,verbs=get;list;watch;create;update;patch;delete
