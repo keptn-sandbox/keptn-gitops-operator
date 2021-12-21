@@ -195,7 +195,7 @@ jobs:
           sarif_file: 'trivy-results.sarif'
 
       - name: Build and Push
-        id: docker_build
+        id: docker_build_push
         uses: docker/build-push-action@v2
         with:
           context: ${{ matrix.service }}/.
