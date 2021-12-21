@@ -231,11 +231,10 @@ func (r *KeptnShipyardReconciler) checkKeptnProjectExists(ctx context.Context, r
 			fmt.Printf("No project %s found\n", project)
 			fmt.Println(err)
 			return false
-		} else {
-			fmt.Println("No projects found")
-			fmt.Println(err)
-			return false
 		}
+		fmt.Println("No projects found")
+		fmt.Println(err)
+		return false
 	}
 	return true
 }

@@ -199,11 +199,10 @@ func (r *KeptnSequenceExecutionReconciler) checkIfServiceExists(ctx context.Cont
 			fmt.Printf("No project %s found\n", project)
 			fmt.Println(err)
 			return false
-		} else {
-			fmt.Println("No projects found")
-			fmt.Println(err)
-			return false
 		}
+		fmt.Println("No projects found")
+		fmt.Println(err)
+		return false
 	}
 
 	for _, proj := range filteredProjects {

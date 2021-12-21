@@ -41,6 +41,7 @@ type KeptnStageStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 }
 
+// KeptnSequenceRefSpec defines a KeptnSequence which is used in this stage
 type KeptnSequenceRefSpec struct {
 	// Type describes how the sequence is defined in this KeptnSequenceRefSpec
 	Type string `json:"type"`

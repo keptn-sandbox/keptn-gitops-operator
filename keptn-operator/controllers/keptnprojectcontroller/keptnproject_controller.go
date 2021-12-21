@@ -137,26 +137,26 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
-	} else {
-		shipyard.Namespace = req.Namespace
-		shipyard.Status.LastAppliedHash = utils.GetHashStructure(shipyard.Spec)
-		if utils.GetHashStructure(shipyard.Spec) != shipyardHash {
-			currentShipyard := &apiv1.KeptnShipyard{}
+	}
 
-			err := r.Client.Get(ctx, types.NamespacedName{Name: keptnproject.Name, Namespace: req.Namespace}, currentShipyard)
-			if err != nil {
-				r.ReqLogger.Error(err, "Could not get shipyard "+shipyard.Name)
-			}
+	shipyard.Namespace = req.Namespace
+	shipyard.Status.LastAppliedHash = utils.GetHashStructure(shipyard.Spec)
 
-			currentShipyard.Spec = shipyard.Spec
-			currentShipyard.Status.LastAppliedHash = utils.GetHashStructure(currentShipyard.Spec)
+	if utils.GetHashStructure(shipyard.Spec) != shipyardHash {
+		currentShipyard := &apiv1.KeptnShipyard{}
+		err := r.Client.Get(ctx, types.NamespacedName{Name: keptnproject.Name, Namespace: req.Namespace}, currentShipyard)
 
-			err = r.Client.Update(ctx, currentShipyard)
-			if err != nil {
-				r.ReqLogger.Error(err, "Could not update status of shipyard "+currentShipyard.Name)
-			}
+		if err != nil {
+			r.ReqLogger.Error(err, "Could not get shipyard "+shipyard.Name)
 		}
 
+		currentShipyard.Spec = shipyard.Spec
+		currentShipyard.Status.LastAppliedHash = utils.GetHashStructure(currentShipyard.Spec)
+		err = r.Client.Update(ctx, currentShipyard)
+
+		if err != nil {
+			r.ReqLogger.Error(err, "Could not update status of shipyard "+currentShipyard.Name)
+		}
 	}
 
 	r.ReqLogger.Info("Finished Reconciling KeptnProject")
@@ -186,11 +186,10 @@ func (r *KeptnProjectReconciler) checkKeptnProjectExists(ctx context.Context, re
 			fmt.Printf("No project %s found\n", project)
 			fmt.Println(err)
 			return false
-		} else {
-			fmt.Println("No projects found")
-			fmt.Println(err)
-			return false
 		}
+		fmt.Println("No projects found")
+		fmt.Println(err)
+		return false
 	}
 	return true
 }
