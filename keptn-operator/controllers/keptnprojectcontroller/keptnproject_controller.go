@@ -196,7 +196,7 @@ func (r *KeptnProjectReconciler) checkKeptnProjectExists(ctx context.Context, re
 	filteredProjects := utils.FilterProjects(projects, project)
 	if len(filteredProjects) == 0 {
 		if project != "" {
-			r.ReqLogger.Error(err, "No project %s found", project)
+			r.ReqLogger.Error(err, "No project "+project+"found")
 			return false
 		}
 		r.ReqLogger.Error(err, "No projects found")
