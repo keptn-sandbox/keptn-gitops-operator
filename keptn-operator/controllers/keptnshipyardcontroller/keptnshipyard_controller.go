@@ -235,19 +235,17 @@ func (r *KeptnShipyardReconciler) checkKeptnProjectExists(ctx context.Context, r
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {
-		fmt.Println(err)
+		r.ReqLogger.Error(err, "Failed getting projects")
 		return false
 	}
 
 	filteredProjects := utils.FilterProjects(projects, project)
 	if len(filteredProjects) == 0 {
 		if project != "" {
-			fmt.Printf("No project %s found\n", project)
-			fmt.Println(err)
+			r.ReqLogger.Error(err, "No project %s found", project)
 			return false
 		}
-		fmt.Println("No projects found")
-		fmt.Println(err)
+		r.ReqLogger.Error(err, "No projects")
 		return false
 	}
 	return true
