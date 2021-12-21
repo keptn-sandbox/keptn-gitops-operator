@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/go-logr/logr"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
 	apiutils "github.com/keptn/go-utils/pkg/api/utils"
@@ -133,7 +132,7 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if !r.checkKeptnProjectExists(ctx, req, keptnproject.Name) {
 		_, err := r.createProject(ctx, keptnproject, req.Namespace)
 		if err != nil {
-			fmt.Println("Could not create project")
+			r.ReqLogger.Error(err, "Could not create project")
 			return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 		}
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
@@ -147,7 +146,7 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 		err := r.Client.Create(ctx, &shipyard)
 		if err != nil {
-			fmt.Println("Could not create Shipyard")
+			r.ReqLogger.Error(err, "Could not create shipyard")
 			return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
@@ -190,19 +189,17 @@ func (r *KeptnProjectReconciler) checkKeptnProjectExists(ctx context.Context, re
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {
-		fmt.Println(err)
+		r.ReqLogger.Error(err, "Could not get Projects")
 		return false
 	}
 
 	filteredProjects := utils.FilterProjects(projects, project)
 	if len(filteredProjects) == 0 {
 		if project != "" {
-			fmt.Printf("No project %s found\n", project)
-			fmt.Println(err)
+			r.ReqLogger.Error(err, "No project %s found", project)
 			return false
 		}
-		fmt.Println("No projects found")
-		fmt.Println(err)
+		r.ReqLogger.Error(err, "No projects found")
 		return false
 	}
 	return true
@@ -240,7 +237,7 @@ func (r *KeptnProjectReconciler) createProject(ctx context.Context, project *api
 
 	secret, err := decryptSecret(project.Spec.Password)
 	if err != nil {
-		fmt.Println("could not decrypt secret")
+		r.ReqLogger.Error(err, "could not decrypt secret")
 		return 0, err
 	}
 
@@ -268,9 +265,7 @@ func (r *KeptnProjectReconciler) createProject(ctx context.Context, project *api
 	if err != nil {
 		return 0, err
 	}
-
-	respBody, _ := ioutil.ReadAll(response.Body)
-	fmt.Println(string(respBody))
+	_, err = ioutil.ReadAll(response.Body)
 
 	return response.StatusCode, err
 }
