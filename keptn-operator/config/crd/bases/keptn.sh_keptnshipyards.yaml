@@ -41,9 +41,14 @@ spec:
                   Important: Run "make" to regenerate code after modifying this file'
                 type: string
               stages:
+                description: Stages define the stages included in this shipyard
                 items:
+                  description: KeptnShipyardStage contains the reference to the KeptnStage
+                    object
                   properties:
                     stageRef:
+                      description: StageRef contains the reference to the KeptnStage
+                        object
                       type: string
                   required:
                   - stageRef

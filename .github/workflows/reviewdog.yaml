@@ -8,7 +8,7 @@ jobs:
 
     strategy:
       matrix:
-        services: ["keptn-operator", "gitops-operator"]
+        services: ["keptn-operator", "gitops-operator", "promotion-service"]
 
     steps:
       - name: Set up Go

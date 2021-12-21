@@ -37,15 +37,22 @@ spec:
             description: KeptnStageSpec defines the desired state of KeptnStage
             properties:
               project:
-                description: Foo is an example field of KeptnStage. Edit keptnstage_types.go
-                  to remove/update
+                description: Project defines the Keptn Project this stage is assigned
+                  to
                 type: string
               sequence:
+                description: Sequence defines an array of sequences this KeptnStage
+                  will use
                 items:
+                  description: KeptnSequenceRefSpec defines a KeptnSequence which
+                    is used in this stage
                   properties:
                     sequenceRef:
+                      description: SequenceRef is used to set a reference to a KeptnSequence
                       type: string
                     type:
+                      description: Type describes how the sequence is defined in this
+                        KeptnSequenceRefSpec
                       type: string
                   required:
                   - type

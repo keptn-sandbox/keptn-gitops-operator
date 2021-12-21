@@ -1,0 +1,6 @@
+dependencies:
+- name: keptn
+  repository: https://storage.googleapis.com/keptn-installer
+  version: 0.11.3
+digest: sha256:9be54a008bdf0f3ae9deae3d5744fe55fb016ccbe6b5be6bb50477718d473257
+generated: "2021-12-21T09:35:19.18268+01:00"

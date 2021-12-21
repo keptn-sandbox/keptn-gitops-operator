@@ -34,13 +34,11 @@ spec:
           metadata:
             type: object
           spec:
-            description: KeptnSequenceSpec defines the desired state of KeptnSequence
+            description: Spec contains the specification of this sequence
             properties:
               sequence:
-                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                  Important: Run "make" to regenerate code after modifying this filee
-                  Foo is an example field of KeptnSequence. Edit keptnsequence_types.go
-                  to remove/update'
+                description: Sequence defines the Keptn Sequence this is referring
+                  to
                 properties:
                   name:
                     type: string
@@ -68,6 +66,8 @@ spec:
                         event:
                           type: string
                         selector:
+                          description: Selector defines criteria for a sequence to
+                            get triggered
                           properties:
                             match:
                               additionalProperties:
@@ -88,7 +88,8 @@ spec:
             - sequence
             type: object
           status:
-            description: KeptnSequenceStatus defines the observed state of KeptnSequence
+            description: Status contains information about the current status of this
+              KeptnSequence
             type: object
         type: object
     served: true

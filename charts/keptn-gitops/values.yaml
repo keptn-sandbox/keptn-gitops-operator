@@ -1,0 +1,8 @@
+gitops-operator:
+  enabled: true
+  image: docker.io/thschue/gitops-operator:0.1.0
+
+keptn-operator:
+  enabled: true
+  image: docker.io/thschue/keptn-operator:0.1.0
+

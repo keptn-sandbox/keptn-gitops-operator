@@ -1,0 +1,182 @@
+stage: teststage
+
+image:
+  repository: my-repository/input-value
+  pullPolicy: IfNotPresent
+
+identityProvider:
+  sso:
+    domain: sso-testdata-input
+  iam:
+    domain: https://iam-testdata.input-value
+
+helmTest:
+  image:
+    name: input-value
+    tag:
+
+git-service:
+  deployment:
+    hostName: input-value
+  image:
+    name: input-value
+    tag: input-value
+
+  port: 8080
+  loglevel: INFO
+  config:
+    database:
+      endPoint: https://demo.database.internal.keptn.sh
+    cluster:
+      endPoint: https://{tenantId}.dev.keptn.sh
+    oauth2ClientId: keptn-sh-dev
+    oauth2ClientSecret:
+    oauth2RedirectUri: https://oauth.keptn.sh/login/oauth2/code/keptn-sso
+  persistence:
+    mountPath: /var/keptn
+    volume:
+      size: 1Gi
+  replicaCount: 1
+  service:
+    annotations:
+    type: ClusterIP
+    port: 80
+  # Create OAuth secret
+  oauth_client:
+    policy:
+      client:
+        id:
+        secret:
+  init:
+    image:
+      name: my-repository/input-value
+      tag: 3.13.0-20210122
+
+keptn:
+  image:
+    name: keptn
+    tag:
+  service:
+    port: 80
+  loglevel: INFO
+  downloadTokenSecretName: auth-token-secret
+  downloadTokenSecretFieldName: token
+  imagePullSecrets:
+  port: 8080
+  faasl:
+    image: my-repository/input-value
+    tag: 0.8.1
+  fetcher:
+    image: my-repository/input-value
+    tag:
+    # Create OAuth secret
+  oauth_client:
+    client:
+      id:
+      secret:
+  lambda:
+    resourceProperties:
+      namePrefix:
+  # Spring common configurations
+springCommon:
+  actuatorPort: 8888
+  lifecycle:
+    shutdownTimeout: 60s
+
+redis:
+  port: 6379
+  password:
+  image:
+    imageName: my-repository/input-value
+    imageTag: input-value
+
+etcd:
+  port: 2379
+  image:
+    imageName: my-repository/input-value
+    imageTag: input-value
+  persistence:
+    mountPath: /etcd-data/
+    enabled: true
+    size: 256Mi
+
+ingress:
+  enabled: true
+  nginx:
+    enabled: true
+  class: nginx-keptn
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 128m
+    nginx.ingress.kubernetes.io/client-body-buffer-size: 128m
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+  hosts:
+    - host: [""]
+      paths: ["/"]
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+
+persistence:
+  storageClass: gp3
+priorityClassName: medium-priority
+podDisruptionBudget:
+  enabled: true
+imagePullSecrets: []
+  #Specify the image pull secrets as an array:
+#- - name: <secretName>
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  nameSuffix: "sa"
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+#   memory:
+
+affinity: {}
+
+# nginx controller overwrites
+ingress-nginx:
+  controller:
+    service:
+      internal:
+        enabled: true
+      annotations:
+        service.beta.kubernetes.io/aws-load-balancer-internal: 0.0.0.0/0
+        service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "180"
+    ingressClass: nginx-keptn
+    config:
+      use-forwarded-headers: "true"
+    affinity: {}
+    image:
+      repository: my-repository/input-value
+      tag: v0.43.0
+      digest: ''
+    priorityClassName: medium-priority
+    admissionWebhooks:
+      patch:
+        image:
+          repository: my-repository/input-value
+          tag: v1.5.1
+        priorityClassName: medium-priority
+  imagePullSecrets: [ ]
+  # - name: secretName
+
+skaffold:
+  enabled: false
