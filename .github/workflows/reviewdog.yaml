@@ -30,5 +30,6 @@ jobs:
       - name: Run reviewdog
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory:  ${{ matrix.services }}
         run: |
           reviewdog -reporter=github-pr-review
