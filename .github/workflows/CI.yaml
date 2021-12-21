@@ -138,6 +138,10 @@ jobs:
       VERSION: ${{ needs.prepare_ci_run.outputs.VERSION }}
       DATETIME: ${{ needs.prepare_ci_run.outputs.DATE }}${{ needs.prepare_ci_run.outputs.TIME }}
       GIT_SHA: ${{ needs.prepare_ci_run.outputs.GIT_SHA }}
+      TRIVY_IGNORE_UNFIXED: true
+      TRIVY_VULN_TYPE: 'os,library'
+      TRIVY_SEVERITY: 'CRITICAL,HIGH'
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -167,6 +171,24 @@ jobs:
           IMAGE_NAME: "${{ env.DOCKER_ORGANIZATION }}/${{ matrix.service }}"
           DATETIME: ${{ env.DATETIME }}
           context: ${{ matrix.service }}/.
+          file: ${{ matrix.service }}/Dockerfile
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ env.DOCKER_ORGANIZATION }}/${{ matrix.service }}:${{ env.VERSION }}"
+          exit-code: '1'
+          ignore-unfixed: '${{ env.TRIVY_IGNORE_UNFIXED }}'
+          vuln-type: '${{ env.TRIVY_VULN_TYPE }}'
+          severity: '${{ env.TRIVY_SEVERITY }}'
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: 'trivy-results.sarif'
 
       - id: create_docker_build_report
         name: Create Docker Build Report
