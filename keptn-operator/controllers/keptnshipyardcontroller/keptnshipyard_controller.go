@@ -67,7 +67,7 @@ type KeptnShipyardReconciler struct {
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnshipyards/finalizers,verbs=update
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnsequences/,verbs=get;list
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnprojects/,verbs=get;list
-//+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;
+//+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

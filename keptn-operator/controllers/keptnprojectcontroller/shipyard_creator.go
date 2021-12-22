@@ -15,7 +15,6 @@ func (r *KeptnProjectReconciler) createShipyard(ctx context.Context, project *ap
 	for _, stage := range r.getKeptnStages(ctx, project.Name) {
 		shipyard.Spec.Stages = append(shipyard.Spec.Stages, apiv1.KeptnShipyardStage{StageRef: stage.Name})
 	}
-
 	return shipyard
 }
 

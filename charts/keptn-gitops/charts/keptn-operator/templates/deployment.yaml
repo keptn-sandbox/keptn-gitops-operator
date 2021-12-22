@@ -616,6 +616,7 @@ rules:
   verbs:
   - get
   - list
+  - watch
 - apiGroups:
   - keptn.sh
   resources:

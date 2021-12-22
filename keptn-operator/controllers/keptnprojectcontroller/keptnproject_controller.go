@@ -55,6 +55,8 @@ type KeptnProjectReconciler struct {
 	KeptnAPIScheme string
 }
 
+const ReconcileRetryInterval = 10 * time.Second
+
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnprojects,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnprojects/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnprojects/finalizers,verbs=update
@@ -133,9 +135,9 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		_, err := r.createProject(ctx, keptnproject, req.Namespace)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not create project")
-			return ctrl.Result{RequeueAfter: 30 * time.Second}, err
+			return ctrl.Result{RequeueAfter: ReconcileRetryInterval}, err
 		}
-		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+		return ctrl.Result{RequeueAfter: ReconcileRetryInterval}, nil
 	}
 
 	shipyard := r.createShipyard(ctx, keptnproject)
@@ -144,10 +146,15 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		shipyard.Namespace = req.Namespace
 		shipyard.Status.LastAppliedHash = utils.GetHashStructure(shipyard.Spec)
 
-		err := r.Client.Create(ctx, &shipyard)
+		err := controllerutil.SetControllerReference(keptnproject, &shipyard, r.Scheme)
+		if err != nil {
+			r.ReqLogger.Error(err, "Could not set controller reference")
+		}
+
+		err = r.Client.Create(ctx, &shipyard)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not create shipyard")
-			return ctrl.Result{RequeueAfter: 30 * time.Second}, err
+			return ctrl.Result{RequeueAfter: ReconcileRetryInterval}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -173,13 +180,14 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	r.ReqLogger.Info("Finished Reconciling KeptnProject")
-	return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	return ctrl.Result{RequeueAfter: ReconcileRetryInterval}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *KeptnProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&apiv1.KeptnProject{}).
+		Owns(&apiv1.KeptnShipyard{}).
 		Complete(r)
 }
 
