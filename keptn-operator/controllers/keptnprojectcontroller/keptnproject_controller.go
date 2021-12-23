@@ -20,10 +20,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/go-logr/logr"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
 	apiutils "github.com/keptn/go-utils/pkg/api/utils"
-	"io/ioutil"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -132,7 +132,7 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	if !r.checkKeptnProjectExists(ctx, req, keptnproject.Name) {
-		_, err := r.createProject(ctx, keptnproject, req.Namespace)
+		err := r.createProject(ctx, keptnproject, req.Namespace)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not create project")
 			return ctrl.Result{RequeueAfter: ReconcileRetryInterval}, err
@@ -238,7 +238,7 @@ func (r *KeptnProjectReconciler) deleteKeptnProject(ctx context.Context, namespa
 	return err
 }
 
-func (r *KeptnProjectReconciler) createProject(ctx context.Context, project *apiv1.KeptnProject, namespace string) (int, error) {
+func (r *KeptnProjectReconciler) createProject(ctx context.Context, project *apiv1.KeptnProject, namespace string) error {
 	httpclient := nethttp.Client{
 		Timeout: 30 * time.Second,
 	}
@@ -246,7 +246,7 @@ func (r *KeptnProjectReconciler) createProject(ctx context.Context, project *api
 	secret, err := decryptSecret(project.Spec.Password)
 	if err != nil {
 		r.ReqLogger.Error(err, "could not decrypt secret")
-		return 0, err
+		return err
 	}
 
 	data, _ := json.Marshal(map[string]string{
@@ -262,7 +262,7 @@ func (r *KeptnProjectReconciler) createProject(ctx context.Context, project *api
 	request, err := nethttp.NewRequest("POST", r.KeptnAPI+"/controlPlane/v1/project", bytes.NewBuffer(data))
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not create project "+project.Name)
-		return 0, err
+		return err
 	}
 
 	request.Header.Set("content-type", "application/json")
@@ -271,11 +271,14 @@ func (r *KeptnProjectReconciler) createProject(ctx context.Context, project *api
 	r.ReqLogger.Info("Creating Keptn Project " + project.Name)
 	response, err := httpclient.Do(request)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	_, err = ioutil.ReadAll(response.Body)
 
-	return response.StatusCode, err
+	err = utils.CheckResponseCode(response, nethttp.StatusOK)
+	if err != nil {
+		return fmt.Errorf("could not create project %v: %v", project.Name, err)
+	}
+	return err
 }
 
 func checkKeptnShipyard(ctx context.Context, req ctrl.Request, client client.Client, project string) (bool, string) {

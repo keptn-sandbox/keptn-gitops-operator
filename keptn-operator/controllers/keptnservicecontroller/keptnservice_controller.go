@@ -146,7 +146,7 @@ func (r *KeptnServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	if !r.checkIfServiceExists(ctx, req, keptnservice.Spec.Project, keptnservice.Name) {
-		_, err := r.createService(ctx, keptnservice.Name, req.Namespace, keptnservice.Spec.Project)
+		err := r.createService(ctx, keptnservice.Name, req.Namespace, keptnservice.Spec.Project)
 		if err != nil {
 			fmt.Println("Could not create service")
 		}
@@ -207,7 +207,7 @@ func (r *KeptnServiceReconciler) deleteKeptnService(ctx context.Context, namespa
 	return err
 }
 
-func (r *KeptnServiceReconciler) createService(ctx context.Context, service string, namespace string, project string) (int, error) {
+func (r *KeptnServiceReconciler) createService(ctx context.Context, service string, namespace string, project string) error {
 	httpclient := nethttp.Client{
 		Timeout: 30 * time.Second,
 	}
@@ -221,7 +221,7 @@ func (r *KeptnServiceReconciler) createService(ctx context.Context, service stri
 	request, err := nethttp.NewRequest("POST", r.KeptnAPI+"/controlPlane/v1/project/"+project+"/service", bytes.NewBuffer(data))
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not create service "+service)
-		return 0, err
+		return err
 	}
 
 	request.Header.Set("content-type", "application/json")
@@ -230,9 +230,14 @@ func (r *KeptnServiceReconciler) createService(ctx context.Context, service stri
 	r.ReqLogger.Info("Creating Keptn Service " + service)
 	response, err := httpclient.Do(request)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	return response.StatusCode, err
+	err = utils.CheckResponseCode(response, nethttp.StatusOK)
+	if err != nil {
+		return fmt.Errorf("could not create service %v: %v", service, err)
+	}
+
+	return err
 }
 
 func (r *KeptnServiceReconciler) checkIfServiceExists(ctx context.Context, req ctrl.Request, project string, service string) bool {

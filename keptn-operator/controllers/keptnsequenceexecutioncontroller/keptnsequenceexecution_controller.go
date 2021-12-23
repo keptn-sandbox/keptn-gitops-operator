@@ -284,9 +284,12 @@ func (r *KeptnSequenceExecutionReconciler) triggerTask(ctx context.Context, exec
 		return "", err
 	}
 
-	respBody, err := io.ReadAll(response.Body)
-	fmt.Println(string(respBody))
+	err = utils.CheckResponseCode(response, nethttp.StatusOK)
+	if err != nil {
+		return "", err
+	}
 
+	respBody, err := io.ReadAll(response.Body)
 	kcontext := &CreateEventResponse{}
 
 	err = json.Unmarshal(respBody, kcontext)

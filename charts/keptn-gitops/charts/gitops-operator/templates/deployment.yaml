@@ -136,6 +136,73 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+    - keptn.sh
+  resources:
+    - keptnprojects
+  verbs:
+    - get
+    - list
+    - watch
+    - create
+    - update
+    - patch
+- apiGroups:
+    - keptn.sh
+  resources:
+    - keptnservices
+  verbs:
+    - get
+    - list
+    - watch
+    - update
+    - create
+    - patch
+- apiGroups:
+    - keptn.sh
+  resources:
+    - keptnsequences
+  verbs:
+    - get
+    - list
+    - watch
+    - update
+    - create
+    - patch
+- apiGroups:
+    - keptn.sh
+  resources:
+    - keptnsequenceexecutions
+  verbs:
+    - get
+    - list
+    - watch
+    - update
+    - create
+    - patch
+- apiGroups:
+    - keptn.sh
+  resources:
+    - keptnscheduledexec
+  verbs:
+    - get
+    - list
+    - watch
+    - update
+    - create
+    - patch
+- apiGroups:
+    - keptn.sh
+  resources:
+    - keptnstages
+  verbs:
+    - get
+    - list
+    - watch
+    - update
+    - create
+    - patch
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

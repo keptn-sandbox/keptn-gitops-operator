@@ -3,13 +3,13 @@ kind: KeptnScheduledExec
 metadata:
   name: keptnscheduledexec-sample
 spec:
-  startTime: "2021-12-21T13:31:26+00:00"
+  startTime: "2021-12-22T13:31:26+00:00"
   sequenceExecutionTemplate:
     project: "podtato-head"
     service: "main"
-    stage: "dev-3"	
-    event: "dev-3.artifact-delivery.triggered"
+    stage: "dev"	
+    event: "dev.artifact-delivery.triggered"
     labels:
-      version: 1.2.9
+      version: 1.2.13
       author: "The Keptn"
       sourceCommitHash: "Test"

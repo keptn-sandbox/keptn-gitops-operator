@@ -32,3 +32,17 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnprojects/
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnsequences/
+  verbs:
+  - get
+  - list
