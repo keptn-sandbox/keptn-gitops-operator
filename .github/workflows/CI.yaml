@@ -146,7 +146,6 @@ jobs:
 
 
   helm_chart_build:
-    strategy:
     needs: [prepare_ci_run, docker_build]
     name: Build Helm Charts
     runs-on: ubuntu-20.04
