@@ -130,6 +130,34 @@ jobs:
           DOCKERFILE: ${{ matrix.service }}/docker/Dockerfile
           REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
           REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          PUSH: false
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Docker Build
+        id: docker_build_push
+        uses: ./.github/actions/docker-build
+        with:
+          TAGS: |
+            ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}
+            ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}.${{ env.DATETIME }}
+          BUILD_ARGS: |
+            version=${{ env.VERSION }}
+          CONTEXT: ${{ matrix.service }}
+          DOCKERFILE: ${{ matrix.service }}/docker/Dockerfile
+          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
           PUSH: ${{(github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository)}}
 
       - id: report_docker_build_to_pr
