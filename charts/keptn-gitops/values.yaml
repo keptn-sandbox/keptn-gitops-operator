@@ -1,22 +1,10 @@
 gitops-operator:
   enabled: true
-  image: keptnsandbox/gitops-operator:0.0.6-dev-PR-18
+  image: keptnsandbox/gitops-gitops-operator:latest
 
 keptn-operator:
   enabled: true
-  image: keptnsandbox/keptn-operator:0.0.6-dev-PR-18
+  image: keptnsandbox/gitops-keptn-operator:latest
 
 promotion-service:
-  image: keptnsandbox/promotion-service:0.0.6-dev-PR-18
-
-keptn:
-  control-plane:
-    shipyardController:
-      image:
-        repository: "keptn/shipyard-controller"
-        tag: "0.12.0-dev-PR-6410"
-
-    configurationService:
-      image:
-        repository: "keptn/configuration-service"
-        tag: "0.12.0-dev-PR-6410"
+  image: keptnsandbox/gitops-promotion-service:latest

@@ -28,8 +28,9 @@ fi
 
 
 # replace "appVersion: latest" with "appVersion: $VERSION" in all Chart.yaml files
-# find . -name Chart.yaml -exec sed -i -- "s/appVersion: latest/appVersion: ${APP_VERSION}/g" {} \;
-# find . -name Chart.yaml -exec sed -i -- "s/version: latest/version: ${VERSION}/g" {} \;
+find ./$CHART_DIR -name Chart.yaml -exec sed -i -- "s/appVersion: latest/appVersion: ${APP_VERSION}/g" {} \;
+find ./$CHART_DIR -name Chart.yaml -exec sed -i -- "s/version: latest/version: ${VERSION}/g" {} \;
+find ./$CHART_DIR -name values.yaml -exec sed -i -- "s/version: latest/version: ${VERSION}/g" {} \;
 
 mkdir installer/
 
