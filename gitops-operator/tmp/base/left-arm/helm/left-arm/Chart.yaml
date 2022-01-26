@@ -1,0 +1,5 @@
+apiVersion: v2
+name: podtato-head-left-arm
+description: Deploys the podtato-head left-arm service
+version: 0.1.0
+appVersion: v0.1.0

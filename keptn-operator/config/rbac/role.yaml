@@ -1,0 +1,238 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnprojects
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnprojects/
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnprojects/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnprojects/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnscheduledexecs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnscheduledexecs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnscheduledexecs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnsequenceexecutions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnsequenceexecutions/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnsequenceexecutions/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnsequences
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnsequences/
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnsequences/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnsequences/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservicedeployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservicedeployments/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservicedeployments/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservices
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservices/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservices/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnshipyards
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnshipyards/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnshipyards/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnstages
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnstages/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnstages/status
+  verbs:
+  - get
+  - patch
+  - update

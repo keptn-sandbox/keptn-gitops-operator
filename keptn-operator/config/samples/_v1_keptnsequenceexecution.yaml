@@ -1,0 +1,6 @@
+apiVersion: keptn.sh/v1
+kind: KeptnSequenceExecution
+metadata:
+  name: keptnsequenceexecution-sample
+spec:
+  # Add fields here

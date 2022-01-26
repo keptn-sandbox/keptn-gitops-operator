@@ -1,0 +1,15 @@
+apiVersion: skaffold/v1beta13
+kind: Config
+build:
+  artifacts:
+    - image: keptnsandbox/promotion-service # Todo: Replace this with your image name
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          debugBuild: false 
+  local:
+    useBuildkit: true
+deploy:
+  kubectl:
+    manifests:
+      - deploy/service.yaml

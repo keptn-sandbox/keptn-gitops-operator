@@ -1,0 +1,114 @@
+name: Prepare CI Run
+on:
+  workflow_call:
+    outputs:
+      BRANCH:
+        description: Name of the branch that is currently being built
+        value: ${{ jobs.prepare_ci_run.outputs.BRANCH }}
+      BRANCH_SLUG:
+        description: Slug-name of the branch that is currently being built
+        value: ${{ jobs.prepare_ci_run.outputs.BRANCH_SLUG }}
+      VERSION:
+        description: Version that the next build should have (e.g., for tagging docker images)
+        value: ${{ jobs.prepare_ci_run.outputs.VERSION }}
+      DATETIME:
+        description: Current date and time (e.g., for tagging docker images)
+        value: ${{ jobs.prepare_ci_run.outputs.DATETIME }}
+      GIT_SHA:
+        description: Hash of the current git commit that this CI run is based on
+        value: ${{ jobs.prepare_ci_run.outputs.GIT_SHA }}
+defaults:
+  run:
+    shell: bash
+jobs:
+  prepare_ci_run:
+    name: Prepare CI Run
+    # Prepare CI Run looks at what has been changed in this commit/PR/... and determines which artifacts should be
+    # built afterwards (in other jobs that depend on this one).
+    runs-on: ubuntu-20.04
+    outputs:
+      BRANCH: ${{ steps.extract_branch.outputs.BRANCH }}
+      BRANCH_SLUG: ${{ steps.extract_branch.outputs.BRANCH_SLUG }}
+      VERSION: ${{ steps.get_version.outputs.VERSION }}
+      DATETIME: ${{ steps.get_datetime.outputs.DATETIME }}
+      GIT_SHA: ${{ steps.extract_branch.outputs.GIT_SHA }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Extract branch name
+        id: extract_branch
+        run: |
+          echo "Note: GITHUB_REF=${GITHUB_REF}"
+
+          if [[ "${GITHUB_REF}" == "refs/heads"* ]]; then
+              echo "Note: This is a push to a local branch -> using branch name"
+              BRANCH=${GITHUB_REF#refs/heads/}
+              BRANCH_SLUG=$(echo $BRANCH | iconv -t ascii//TRANSLIT | sed -r s/[^a-zA-Z0-9]+/-/g | sed -r s/^-+\|-+$//g | tr A-Z a-z)
+          else
+              if [[ "${GITHUB_REF}" == "refs/pull/"* ]]; then
+                  # usually the format for PRs is: refs/pull/1234/merge
+                  echo "Note: This is a Pull Request -> using PR ID"
+                  tmp=${GITHUB_REF#refs/pull/}
+                  # remove the last "/merge"
+                  # Branch name is basically the PR id
+                  BRANCH=PR-${tmp%/merge}
+                  # And Slug is "PR-${PRID}"
+                  BRANCH_SLUG=${BRANCH}
+              else
+                  echo "::error This is neither a push, nor a PR, probably something else... Exiting"
+                  exit 1
+              fi
+          fi
+          GIT_SHA="$(git rev-parse --short HEAD)"
+
+          # print GIT_SHA, BRANCH and BRANCH_SLUG (make sure they are also set in needs.prepare_ci_run.outputs !!!)
+          echo "##[set-output name=BRANCH;]$(echo ${BRANCH})"
+          echo "##[set-output name=BRANCH_SLUG;]$(echo ${BRANCH_SLUG})"
+          echo "##[set-output name=GIT_SHA;]$(echo ${GIT_SHA})"
+
+      - name: 'Get Previous tag'
+        id: get_previous_tag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+      - name: 'Get next patch version'
+        id: get_next_semver_tag
+        uses: "WyriHaximus/github-action-next-semvers@v1"
+        with:
+          version: ${{ steps.get_previous_tag.outputs.tag }}
+
+      - name: Determine next version
+        id: get_version
+        env:
+          BRANCH: ${{ steps.extract_branch.outputs.BRANCH }}
+          BRANCH_SLUG: ${{ steps.extract_branch.outputs.BRANCH_SLUG }}
+        shell: bash
+        run: |
+          # determine version
+          GIT_LAST_TAG=${{ steps.get_previous_tag.outputs.tag }}
+          GIT_NEXT_TAG=${{ steps.get_next_semver_tag.outputs.patch }}
+          echo "GIT_LAST_TAG=${GIT_LAST_TAG}, GIT_NEXT_TAG=${GIT_NEXT_TAG}"
+
+          if [[ "$BRANCH" == "release-"* ]]; then
+            # Release Branch: extract version from branch name
+            VERSION=${BRANCH#"release-"}
+            else
+            if [[ "$BRANCH" == "master" ]]; then
+              # master branch = latest
+              VERSION="${GIT_NEXT_TAG}-dev"
+            else
+              # Feature/Development Branch - use last tag with branch slug
+              VERSION="${GIT_NEXT_TAG}-dev-${BRANCH_SLUG}"
+            fi
+          fi
+
+          echo "VERSION=${VERSION}"
+
+          echo "##[set-output name=VERSION;]$(echo ${VERSION})"
+
+      - name: Get current date and time
+        id: get_datetime
+        run: |
+          echo "::set-output name=DATETIME::$(date +'%Y%m%d')$(date +'%H%M')"

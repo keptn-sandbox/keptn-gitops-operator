@@ -1,0 +1,48 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptngitrepositories
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptngitrepositories/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptngitrepositories/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnprojects/
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnsequences/
+  verbs:
+  - get
+  - list

@@ -1,0 +1,11 @@
+apiVersion: keptn.sh/v1
+kind: KeptnSequence
+metadata:
+  name: evaluation
+spec:
+  sequence:
+    name: "evaluation"
+    tasks:
+      - name: "evaluation"
+        properties:
+          foo: bar

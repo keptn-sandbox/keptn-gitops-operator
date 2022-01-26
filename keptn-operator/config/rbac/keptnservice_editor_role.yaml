@@ -1,0 +1,24 @@
+# permissions for end users to edit keptnservices.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keptnservice-editor-role
+rules:
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservices
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservices/status
+  verbs:
+  - get

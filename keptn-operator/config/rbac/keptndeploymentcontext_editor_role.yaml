@@ -1,0 +1,24 @@
+# permissions for end users to edit keptndeploymentcontexts.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keptndeploymentcontext-editor-role
+rules:
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptndeploymentcontexts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptndeploymentcontexts/status
+  verbs:
+  - get

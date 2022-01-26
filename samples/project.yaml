@@ -1,0 +1,8 @@
+apiVersion: "keptn.sh/v1"
+kind: "KeptnProject"
+metadata:
+  name: "podtato-head"
+spec:
+  repository: "https://github.com/thschue/inno-day-upstream"
+  username: thschue
+  password: "rsa:eZL1NCr0IQNsXX7XIHVRc90H9+EcD55YEb8a7jC9tdfd3+ZVThyVb+4DSAKp0q1o931DSRPMRGvLhaPX+BJhrAD8ejTTOhzNl6WWkdLKpXiheYcXcj9e+fymRHLPn1p/sJtVfOBNNiC5QySo2huK3vJlrF+/5oxDRWJI+1jM+ABm5e0JM9P94dG9eJcxWUenqz3mGl8nhzT7OZJU3OLZ/Z7/zOPab/BO+JSRfxTf5pdBY2qIfTPZTAu76KcxafXQMtctzo65ispNUkszARsDmHUY8aZN82w3LGUpwBjVCd6jnTCn7KEUmoHQsVogTBJzjJpeIAN2mfQIIeWyDVAzWg=="

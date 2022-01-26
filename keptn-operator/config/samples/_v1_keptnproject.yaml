@@ -1,0 +1,6 @@
+apiVersion: keptn.sh/v1
+kind: KeptnProject
+metadata:
+  name: keptnproject-sample
+spec:
+  # Add fields here

@@ -1,0 +1,18 @@
+dependencies:
+- name: keptn
+  repository: https://storage.googleapis.com/keptn-installer
+  version: 0.11.3
+- name: gitops-operator
+  repository: ""
+  version: 0.1.0
+- name: keptn-operator
+  repository: ""
+  version: 0.1.0
+- name: promotion-service
+  repository: ""
+  version: 0.11.3
+- name: helm-service
+  repository: https://storage.googleapis.com/keptn-installer
+  version: 0.11.3
+digest: sha256:cc5656cfed5e2f9ce1685fd9d45c895e9271393d1678cd68adb356c58123480c
+generated: "2021-12-23T11:27:50.029665+01:00"

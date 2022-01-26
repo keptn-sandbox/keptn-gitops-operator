@@ -1,0 +1,81 @@
+domain: keptn.sh
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: keptn-operator
+repo: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: keptn.sh
+  kind: KeptnShipyard
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: keptn.sh
+  kind: KeptnProject
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: keptn.sh
+  kind: KeptnSequenceExecution
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: keptn.sh
+  kind: KeptnService
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: keptn.sh
+  kind: KeptnStage
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: keptn.sh
+  kind: KeptnSequence
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: keptn.sh
+  kind: KeptnScheduledExec
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: keptn.sh
+  kind: KeptnServiceDeployment
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: keptn.sh
+  kind: KeptnDeploymentContext
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
+  version: v1
+version: "3"

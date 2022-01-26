@@ -1,0 +1,9 @@
+apiVersion: keptn.sh/v1
+kind: KeptnStage
+metadata:
+  name: dev
+spec:
+  project: "innoday"
+  sequence:
+    - type: "evaluation"
+      sequenceRef: "evaluation"

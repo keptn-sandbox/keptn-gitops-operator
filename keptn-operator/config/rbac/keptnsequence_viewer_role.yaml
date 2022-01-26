@@ -1,0 +1,20 @@
+# permissions for end users to view keptnsequences.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keptnsequence-viewer-role
+rules:
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnsequences
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnsequences/status
+  verbs:
+  - get

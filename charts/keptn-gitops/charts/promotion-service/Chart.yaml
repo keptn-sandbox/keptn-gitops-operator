@@ -1,0 +1,6 @@
+apiVersion: v2
+appVersion: 0.11.3
+description: Helm Chart for the keptn promotion-service
+name: promotion-service
+type: application
+version: 0.11.3

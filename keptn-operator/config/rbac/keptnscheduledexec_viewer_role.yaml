@@ -1,0 +1,20 @@
+# permissions for end users to view keptnscheduledexecs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keptnscheduledexec-viewer-role
+rules:
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnscheduledexecs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnscheduledexecs/status
+  verbs:
+  - get

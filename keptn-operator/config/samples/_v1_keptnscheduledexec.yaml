@@ -1,0 +1,16 @@
+apiVersion: keptn.sh/v1
+kind: KeptnScheduledExec
+metadata:
+  name: keptnscheduledexec-sample
+spec:
+ startTime: ""
+ sequenceExecutionTemplate:
+   project: "podtato-head"
+   service: "main"
+   stage: "dev-1"
+   event: "dev-1.artifact-delivery.triggered"
+   labels:
+     version: 1.2.9
+     author: "The Keptn"
+     sourceCommitHash: "Test"
+

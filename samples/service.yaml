@@ -1,0 +1,7 @@
+---
+apiVersion: "keptn.sh/v1"
+kind: "KeptnService"
+metadata:
+  name: "main"
+spec:
+  project: "podtato-head"

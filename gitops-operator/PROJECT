@@ -1,0 +1,18 @@
+domain: keptn.sh
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: gitops-operator
+repo: bitbucket.lab.dynatrace.com/kia/innovation-day-keptn-gitops/gitops-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: keptn.sh
+  kind: KeptnGitRepository
+  path: bitbucket.lab.dynatrace.com/kia/innovation-day-keptn-gitops/gitops-operator/api/v1
+  version: v1
+version: "3"

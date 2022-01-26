@@ -1,0 +1,20 @@
+# permissions for end users to view keptnstages.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keptnstage-viewer-role
+rules:
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnstages
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnstages/status
+  verbs:
+  - get

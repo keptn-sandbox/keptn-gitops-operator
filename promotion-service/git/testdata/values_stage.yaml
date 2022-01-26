@@ -1,0 +1,33 @@
+stage: teststage
+
+image:
+  repository: my-repository/changed-value
+
+identityProvider:
+  iam:
+    domain: https://iam-testdata.changed-value
+
+helmTest:
+  image:
+    name: changed-value
+
+git-service:
+  deployment:
+    hostName: changed-value
+  image:
+    tag: changed-value
+
+redis:
+  port: 6379
+  password:
+  image:
+    imageName: my-repository/changed-value
+    imageTag: changed-value
+
+etcd:
+  image:
+    imageTag: changed-value
+
+ingress:
+  enabled: false 
+
