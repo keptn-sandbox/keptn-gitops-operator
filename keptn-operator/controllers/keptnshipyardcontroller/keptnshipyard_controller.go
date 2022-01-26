@@ -17,21 +17,29 @@ limitations under the License.
 package keptnshipyardcontroller
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-logr/logr"
 	"github.com/imroc/req"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
 	apiutils "github.com/keptn/go-utils/pkg/api/utils"
 	"gopkg.in/yaml.v3"
+	"io/ioutil"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	nethttp "net/http"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	"os"
+	"os/exec"
+	"path/filepath"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"time"
@@ -108,6 +116,32 @@ func (r *KeptnShipyardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return reconcile.Result{Requeue: true}, err
 	}
 
+	shipyardSpecVersion := &v1.ConfigMap{}
+	err = r.Client.Get(ctx, types.NamespacedName{Name: "shipyard-" + shipyardInstance.Spec.Project, Namespace: req.Namespace}, shipyardSpecVersion)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			shipyardSpecVersion.Name = "shipyard-" + shipyardInstance.Spec.Project
+			shipyardSpecVersion.Namespace = req.Namespace
+			shipyardSpecVersion.Data = map[string]string{
+				"Hash": "none",
+			}
+			err := controllerutil.SetControllerReference(shipyardInstance, shipyardSpecVersion, r.Scheme)
+			if err != nil {
+				r.ReqLogger.Error(err, "could not set controller reference:")
+			}
+			err = r.Client.Create(ctx, shipyardSpecVersion)
+			if err != nil {
+				r.ReqLogger.Error(err, "Could not create version configmap")
+			}
+		}
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	specHash := utils.GetHashStructure(shipyardInstance.Spec)
+	if specHash == shipyardSpecVersion.Data["Hash"] {
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	}
+
 	if !r.checkKeptnProjectExists(ctx, req, shipyardInstance.Spec.Project) {
 		r.Recorder.Event(shipyardInstance, "Warning", "KeptnProjectNotFound", fmt.Sprintf("Keptn project %s does not exist", shipyardInstance.Spec.Project))
 		shipyardInstance.Status.ProjectExists = false
@@ -131,14 +165,14 @@ func (r *KeptnShipyardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	stages, err := r.transformStageSpecsToKeptnAPI(shipyardInstance, shipyardInstance.Spec.Stages)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not transform stages")
-		return reconcile.Result{Requeue: true}, err
+		return reconcile.Result{RequeueAfter: 30 * time.Second, Requeue: true}, err
 	}
 	keptnShipyard.Spec.Stages = stages
 
 	shipyardString, err := yaml.Marshal(keptnShipyard)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not marshal shipyard")
-		return reconcile.Result{Requeue: true}, err
+		return reconcile.Result{RequeueAfter: 30 * time.Second, Requeue: true}, err
 	}
 	// encodedShipyardString := base64.StdEncoding.EncodeToString(shipyardString)
 
@@ -147,9 +181,18 @@ func (r *KeptnShipyardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		Shipyard: shipyardString,
 	}
 
-	_, err = r.updateShipyard(ctx, req.Namespace, shipyardInstance.Spec.Project, newProject)
+	err = r.updateShipyard(ctx, req.Namespace, shipyardInstance.Spec.Project, newProject)
 	if err != nil {
-		return reconcile.Result{Requeue: true}, err
+		r.ReqLogger.Error(err, "Could not update shipyard")
+		return reconcile.Result{RequeueAfter: 30 * time.Second, Requeue: true}, err
+	}
+
+	shipyardSpecVersion.Data["Hash"] = specHash
+	err = r.Client.Update(ctx, shipyardSpecVersion)
+	if err != nil {
+		r.ReqLogger.Error(err, "Could not update status", "KeptnShipyard", shipyardInstance.Name)
+	} else {
+		r.ReqLogger.Info("Updated status", "status", shipyardInstance.Status)
 	}
 
 	r.ReqLogger.Info("Finished Reconciling KeptnShipyard")
@@ -251,28 +294,129 @@ func (r *KeptnShipyardReconciler) checkKeptnProjectExists(ctx context.Context, r
 	return true
 }
 
-func (r *KeptnShipyardReconciler) updateShipyard(ctx context.Context, namespace string, project string, createProject apiv1.CreateProject) (int, error) {
-	httpclient := nethttp.Client{
-		Timeout: 30 * time.Second,
-	}
+func (r *KeptnShipyardReconciler) updateShipyard(ctx context.Context, namespace string, project string, createProject apiv1.CreateProject) error {
+	upstreamDir, _ := ioutil.TempDir("", "upstream_tmp_dir")
 
-	data, _ := json.Marshal(createProject)
-
-	keptnToken := utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, namespace)
-
-	request, err := nethttp.NewRequest("PUT", r.KeptnAPI+"/controlPlane/v1/project", bytes.NewBuffer(data))
+	upstreamRepo, err := getUpstreamCredentials(ctx, r.Client, project, namespace)
 	if err != nil {
-		r.ReqLogger.Error(err, "Could not update shipyard for project "+project)
-		return 0, err
+		return err
 	}
 
-	request.Header.Set("content-type", "application/json")
-	request.Header.Set("x-token", keptnToken)
-
-	r.ReqLogger.Info("Updating Shipyard for project " + project)
-	response, err := httpclient.Do(request)
+	gitrepo, _, err := upstreamRepo.CheckOutGitRepo(upstreamDir)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	return response.StatusCode, err
+
+	authentication := &githttp.BasicAuth{
+		Username: upstreamRepo.user,
+		Password: upstreamRepo.token,
+	}
+
+	commitOptions := git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "Keptn Upstream Pusher",
+			Email: "keptn@keptn.sh",
+			When:  time.Now(),
+		},
+	}
+
+	err = ioutil.WriteFile(filepath.Join(upstreamDir, "shipyard.yaml"), createProject.Shipyard, 0444)
+	if err != nil {
+		return fmt.Errorf("could not write shipyard: %w", err)
+	}
+
+	w, err := gitrepo.Worktree()
+	if err != nil {
+		return fmt.Errorf("could not set worktree: %w", err)
+	}
+
+	// go-git can't stage deleted files https://github.com/src-d/go-git/issues/1268
+	err = AddGit(w)
+	if err != nil {
+		return fmt.Errorf("could not add files: %w", err)
+	}
+
+	_, err = w.Commit("Push new version", &commitOptions)
+	if err != nil {
+		return fmt.Errorf("could not commit: %w", err)
+	}
+
+	err = gitrepo.Push(&git.PushOptions{
+		RemoteName: "origin",
+		Auth:       authentication,
+		RefSpecs: []config.RefSpec{
+			"refs/heads/*:refs/heads/*",
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("could not push commit: %w", err)
+	}
+	return nil
+}
+
+func getUpstreamCredentials(ctx context.Context, client client.Client, project string, namespace string) (*gitRepositoryConfig, error) {
+	obj := &apiv1.KeptnProject{}
+	err := client.Get(ctx, types.NamespacedName{Name: project, Namespace: namespace}, obj)
+	if err != nil {
+		return &gitRepositoryConfig{}, err
+	}
+
+	return getGitCredentials(obj.Spec.Repository, obj.Spec.Username, obj.Spec.Password, obj.Spec.DefaultBranch)
+}
+
+func getGitCredentials(remoteURI, user, token string, branch string) (*gitRepositoryConfig, error) {
+	secret, err := utils.DecryptSecret(token)
+	if err != nil {
+		return nil, err
+	}
+
+	if branch == "" {
+		branch = "main"
+	}
+
+	return &gitRepositoryConfig{
+		remoteURI: remoteURI,
+		user:      user,
+		token:     secret,
+		branch:    branch,
+	}, nil
+}
+
+func (repositoryConfig *gitRepositoryConfig) CheckOutGitRepo(dir string) (*git.Repository, string, error) {
+	authentication := &githttp.BasicAuth{
+		Username: repositoryConfig.user,
+		Password: repositoryConfig.token,
+	}
+
+	cloneOptions := git.CloneOptions{
+		URL:           repositoryConfig.remoteURI,
+		Auth:          authentication,
+		SingleBranch:  true,
+		ReferenceName: plumbing.ReferenceName("refs/heads/main"),
+	}
+
+	repo, err := git.PlainClone(dir, false, &cloneOptions)
+	if err != nil {
+		cloneOptions.ReferenceName = plumbing.ReferenceName("refs/heads/master")
+		repo, err = git.PlainClone(dir, false, &cloneOptions)
+		if err != nil {
+			return nil, "", fmt.Errorf("Could not checkout "+repositoryConfig.remoteURI+"/"+repositoryConfig.branch, err)
+		}
+	}
+
+	head, err := repo.Head()
+	if err != nil {
+		return nil, "", fmt.Errorf("Could not get hash of "+repositoryConfig.remoteURI+"/"+repositoryConfig.branch, err)
+	}
+	return repo, head.Hash().String(), nil
+}
+
+func AddGit(worktree *git.Worktree) error {
+	cmd := exec.Command("git", "add", ".")
+	cmd.Dir = worktree.Filesystem.Root()
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("Could not add files: %v", err)
+	}
+	return nil
 }

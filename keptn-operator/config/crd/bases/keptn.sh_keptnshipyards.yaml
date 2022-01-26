@@ -61,6 +61,8 @@ spec:
           status:
             description: KeptnShipyardStatus defines the observed state of KeptnShipyard
             properties:
+              LastUploadedHash:
+                type: string
               lastAppliedHash:
                 type: string
               projectExists:

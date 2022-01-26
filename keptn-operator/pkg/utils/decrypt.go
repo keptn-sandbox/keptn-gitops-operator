@@ -1,4 +1,4 @@
-package keptnprojectcontroller
+package utils
 
 import (
 	"crypto/rand"
@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-func decryptSecret(secret string) (string, error) {
+func DecryptSecret(secret string) (string, error) {
 	data := strings.Split(secret, ":")
 
 	if data[0] == "rsa" {

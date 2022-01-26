@@ -31,8 +31,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	keptnshv1 "github.com/keptn-sandbox/keptn-gitops-operator/gitops-operator/api/v1"
+	gitopsv1 "github.com/keptn-sandbox/keptn-gitops-operator/gitops-operator/api/v1"
 	"github.com/keptn-sandbox/keptn-gitops-operator/gitops-operator/controllers"
+	keptnv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -44,7 +45,8 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(keptnshv1.AddToScheme(scheme))
+	utilruntime.Must(gitopsv1.AddToScheme(scheme))
+	utilruntime.Must(keptnv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -79,12 +81,14 @@ func main() {
 	}
 
 	if err = (&controllers.KeptnGitRepositoryReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-		Log:    ctrl.Log.WithName("controllers").WithName("KeptnGitRepository"),
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor("keptnproject-controller"),
+		Log:      ctrl.Log.WithName("controllers").WithName("KeptnGitRepository"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KeptnGitRepository")
 		os.Exit(1)
+
 	}
 	//+kubebuilder:scaffold:builder
 

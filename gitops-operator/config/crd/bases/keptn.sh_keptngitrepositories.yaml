@@ -37,16 +37,26 @@ spec:
           spec:
             description: KeptnGitRepositorySpec defines the desired state of KeptnGitRepository
             properties:
+              baseDir:
+                type: string
+              branch:
+                type: string
               password:
                 type: string
               repository:
                 type: string
               username:
                 type: string
+            required:
+            - password
+            - repository
+            - username
             type: object
           status:
             description: KeptnGitRepositoryStatus defines the observed state of KeptnGitRepository
             properties:
+              lastCommit:
+                type: string
               result:
                 type: string
             type: object

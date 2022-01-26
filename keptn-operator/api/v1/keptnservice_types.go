@@ -29,7 +29,11 @@ type KeptnServiceSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of KeptnService. Edit keptnservice_types.go to remove/update
-	Project string `json:"project"`
+	Service         string `json:"service"`
+	Project         string `json:"project"`
+	Version         string `json:"version,omitempty"`
+	Stage           string `json:"stage,omitempty"`
+	DeploymentEvent string `json:"deploymentEvent,omitempty"`
 }
 
 // KeptnServiceStatus defines the observed state of KeptnService

@@ -7,4 +7,6 @@ resources:
 - _v1_keptnstage.yaml
 - _v1_keptnsequence.yaml
 - _v1_keptnscheduledexec.yaml
+- _v1_keptnservicedeployment.yaml
+- _v1_keptndeploymentcontext.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

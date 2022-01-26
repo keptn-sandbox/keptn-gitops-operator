@@ -1,0 +1,68 @@
+apiVersion: v2
+actions:
+  - name: "infrastructure"
+    events:
+      - name: "sh.keptn.event.infrastructure-delivery.triggered"
+    tasks:
+      - name: "crossplane"
+        maxPollDuration: 1200
+        files:
+          - scripts
+        image: "ghcr.io/thschue/kubectl:latest"
+        imagePullPolicy: "Always"
+        cmd:
+          - "ash"
+        args:
+          - "/keptn/scripts/run_crossplane.sh"
+
+  - name: "k6-smoke"
+    events:
+      - name: "sh.keptn.event.smoke-test.triggered"
+    tasks:
+      - name: "k6"
+        files:
+          - k6
+          - scripts
+        image: "loadimpact/k6"
+        cmd:
+          - sh
+        args:
+          - /keptn/scripts/run-smoke-test.sh
+        env:
+          - name: STAGE
+            value: "$.data.stage"
+            valueFrom: event
+          - name: SERVICE
+            value: "$.data.service"
+            valueFrom: event
+
+  - name: "release"
+    events:
+      - name: "sh.keptn.event.release.triggered"
+    tasks:
+      - name: "argo-promote"
+        image: "quay.io/argoproj/kubectl-argo-rollouts:master"
+        args: ["promote","podtato-hats","-n","podtatohead-$(STAGE)"]
+        env:
+          - name: STAGE
+            value: "$.data.stage"
+            valueFrom: event
+
+  - name: "get-infra-version"
+    events:
+      - name: "sh.keptn.event.infra-version.triggered"
+    tasks:
+      - name: "getVersion"
+        files:
+          - scripts
+          - infraVersion.txt
+        image: "ghcr.io/thschue/kubectl:latest"
+        imagePullPolicy: "Always"
+        cmd:
+          - "ash"
+        args:
+          - "/keptn/scripts/check_infra_version.sh"
+        env:
+          - name: INFRAVERSION
+            value: "$.data.labels.version"
+            valueFrom: event

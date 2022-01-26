@@ -19,7 +19,6 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: KeptnProject is the Schema for the keptnprojects API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -53,8 +52,6 @@ spec:
         type: object
     served: true
     storage: true
-    subresources:
-      status: {}
 status:
   acceptedNames:
     kind: ""

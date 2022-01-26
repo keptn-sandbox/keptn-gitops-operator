@@ -5,7 +5,7 @@ plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: keptn-operator
-repo: bitbucket.lab.dynatrace.org/kia/innovation-day-keptn-gitops/keptn-operator
+repo: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator
 resources:
 - api:
     crdVersion: v1
@@ -13,7 +13,7 @@ resources:
   controller: true
   domain: keptn.sh
   kind: KeptnShipyard
-  path: bitbucket.lab.dynatrace.org/kia/innovation-day-keptn-gitops/keptn-operator/api/v1
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -21,7 +21,7 @@ resources:
   controller: true
   domain: keptn.sh
   kind: KeptnProject
-  path: bitbucket.lab.dynatrace.org/kia/innovation-day-keptn-gitops/keptn-operator/api/v1
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -29,7 +29,7 @@ resources:
   controller: true
   domain: keptn.sh
   kind: KeptnSequenceExecution
-  path: bitbucket.lab.dynatrace.org/kia/innovation-day-keptn-gitops/keptn-operator/api/v1
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -37,7 +37,7 @@ resources:
   controller: true
   domain: keptn.sh
   kind: KeptnService
-  path: bitbucket.lab.dynatrace.org/kia/innovation-day-keptn-gitops/keptn-operator/api/v1
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -45,7 +45,7 @@ resources:
   controller: true
   domain: keptn.sh
   kind: KeptnStage
-  path: bitbucket.lab.dynatrace.org/kia/innovation-day-keptn-gitops/keptn-operator/api/v1
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -53,7 +53,7 @@ resources:
   controller: true
   domain: keptn.sh
   kind: KeptnSequence
-  path: bitbucket.lab.dynatrace.org/kia/innovation-day-keptn-gitops/keptn-operator/api/v1
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
   version: v1
 - api:
     crdVersion: v1
@@ -61,6 +61,21 @@ resources:
   controller: true
   domain: keptn.sh
   kind: KeptnScheduledExec
-  path: bitbucket.lab.dynatrace.org/kia/innovation-day-keptn-gitops/keptn-operator/api/v1
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: keptn.sh
+  kind: KeptnServiceDeployment
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: keptn.sh
+  kind: KeptnDeploymentContext
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
   version: v1
 version: "3"

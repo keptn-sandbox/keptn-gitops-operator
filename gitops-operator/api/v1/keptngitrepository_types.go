@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	keptnv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,14 +30,17 @@ const (
 
 // KeptnGitRepositorySpec defines the desired state of KeptnGitRepository
 type KeptnGitRepositorySpec struct {
-	Repository string `json:"repository,omitempty"`
-	Token      string `json:"password,omitempty"`
-	Username   string `json:"username,omitempty"`
+	Repository string `json:"repository"`
+	Token      string `json:"password"`
+	Username   string `json:"username"`
+	Branch     string `json:"branch,omitempty"`
+	BaseDir    string `json:"baseDir,omitempty"`
 }
 
 // KeptnGitRepositoryStatus defines the observed state of KeptnGitRepository
 type KeptnGitRepositoryStatus struct {
-	Result string `json:"result,omitempty"`
+	LastCommit string `json:"lastCommit,omitempty"`
+	Result     string `json:"result,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -58,6 +62,14 @@ type KeptnGitRepositoryList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []KeptnGitRepository `json:"items"`
+}
+
+type KeptnProject struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   keptnv1.KeptnProjectSpec   `json:"spec,omitempty"`
+	Status keptnv1.KeptnProjectStatus `json:"status,omitempty"`
 }
 
 func init() {

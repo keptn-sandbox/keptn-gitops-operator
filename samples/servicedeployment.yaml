@@ -1,0 +1,12 @@
+---
+apiVersion: "keptn.sh/v1"
+kind: "KeptnServiceDeployment"
+metadata:
+  name: "podtato-dev"
+spec:
+  project: "podtato-head"
+  service: "main"
+  stage: "dev-3"
+  version: "1.2.10"
+  author: "The Keptn"
+  sourceCommitHash: "Test"

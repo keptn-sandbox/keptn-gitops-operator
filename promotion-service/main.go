@@ -4,15 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
-	"os"
-
 	cloudevents "github.com/cloudevents/sdk-go/v2" // make sure to use v2 cloudevents here
 	"github.com/kelseyhightower/envconfig"
-	"github.com/keptn/go-utils/pkg/lib/keptn"
-	keptnv2 "github.com/keptn/go-utils/pkg/lib/v0_2_0"
 	"github.com/keptn-sandbox/keptn-git-toolbox/promotion-service/eventhandler"
 	"github.com/keptn-sandbox/keptn-git-toolbox/promotion-service/git"
+	"github.com/keptn/go-utils/pkg/lib/keptn"
+	keptnv2 "github.com/keptn/go-utils/pkg/lib/v0_2_0"
+	"log"
+	"os"
+	"sync"
 )
 
 var keptnOptions = keptn.KeptnOpts{}
@@ -33,7 +33,10 @@ type envConfig struct {
  * Depending on the Event Type will call the specific event handler functions, e.g: handleDeploymentFinishedEvent
  * See https://github.com/keptn/spec/blob/0.2.0-alpha/cloudevents.md for details on the payload
  */
-func processKeptnCloudEvent(ctx context.Context, event cloudevents.Event) error {
+
+var m sync.Mutex
+
+func _processKeptnCloudEvent(ctx context.Context, event cloudevents.Event) error {
 	log.Printf("Initializing Keptn Handler")
 
 	serviceName := "promotion-service"
@@ -46,7 +49,6 @@ func processKeptnCloudEvent(ctx context.Context, event cloudevents.Event) error 
 	log.Printf("gotEvent(%s): %s - %s", event.Type(), myKeptn.KeptnContext, event.Context.GetID())
 
 	switch event.Type() {
-
 	case keptnv2.GetTriggeredEventType("promotion"): // sh.keptn.event.promotion.triggered
 		log.Printf("Processing Promotion Event")
 
@@ -63,6 +65,13 @@ func processKeptnCloudEvent(ctx context.Context, event cloudevents.Event) error 
 
 	log.Print(errorMsg)
 	return errors.New(errorMsg)
+}
+
+func processKeptnCloudEvent(ctx context.Context, event cloudevents.Event) error {
+	m.Lock()
+	err := _processKeptnCloudEvent(ctx, event)
+	m.Unlock()
+	return err
 }
 
 /**

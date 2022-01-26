@@ -67,6 +67,11 @@ func (eh *PromotionHandler) HandlePromotionTriggeredEvent() error {
 
 	err = eh.GitHandler.UpdateGitRepo(mysecret, eventData.Stage, eventData.Service, version)
 	if err != nil {
+		count := 0
+		for err != nil && count <= 5 {
+			err = eh.GitHandler.UpdateGitRepo(mysecret, eventData.Stage, eventData.Service, version)
+			count++
+		}
 		eh.KeptnHandler.Logger.Error(fmt.Sprintf("Could not update service %v/%v for stage %v: %v", eventData.Project, eventData.Service, eventData.Stage, err.Error()))
 		sendErr := eh.sendPromotionFinishedWithErrorEvent(err.Error())
 		if sendErr != nil {

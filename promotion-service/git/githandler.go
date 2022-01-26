@@ -138,6 +138,7 @@ func (gh *GitHandler) UpdateGitRepo(credentials GitCredentials, stage string, se
 	_, err = w.Commit("Updated to version "+version, &commitOptions)
 	if err != nil {
 		log.Println("Couldn't commit "+stage, err)
+		return err
 	}
 
 	err = stageRepo.Push(&git.PushOptions{
@@ -146,6 +147,7 @@ func (gh *GitHandler) UpdateGitRepo(credentials GitCredentials, stage string, se
 	})
 	if err != nil {
 		log.Println("Couldn't push "+stage, err)
+		return err
 	}
 	defer os.RemoveAll(dirMaster)
 	defer os.RemoveAll(dirStage)

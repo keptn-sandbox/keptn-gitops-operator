@@ -1,0 +1,6 @@
+apiVersion: keptn.sh/v1
+kind: KeptnDeploymentContext
+metadata:
+  name: keptndeploymentcontext-sample
+spec:
+  # Add fields here

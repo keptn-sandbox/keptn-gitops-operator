@@ -145,8 +145,8 @@ func (r *KeptnServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if !r.checkIfServiceExists(ctx, req, keptnservice.Spec.Project, keptnservice.Name) {
-		err := r.createService(ctx, keptnservice.Name, req.Namespace, keptnservice.Spec.Project)
+	if !r.checkIfServiceExists(ctx, req, keptnservice.Spec.Project, keptnservice.Spec.Service) {
+		err := r.createService(ctx, keptnservice.Spec.Service, req.Namespace, keptnservice.Spec.Project)
 		if err != nil {
 			fmt.Println("Could not create service")
 		}
@@ -191,7 +191,7 @@ func (r *KeptnServiceReconciler) deleteKeptnService(ctx context.Context, namespa
 
 	keptnToken := utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, namespace)
 
-	request, err := nethttp.NewRequest("DELETE", r.KeptnAPI+"/controlPlane/v1/project/"+keptnservice.Spec.Project+"/service/"+keptnservice.Name, bytes.NewBuffer(nil))
+	request, err := nethttp.NewRequest("DELETE", r.KeptnAPI+"/controlPlane/v1/project/"+keptnservice.Spec.Project+"/service/"+keptnservice.Spec.Service, bytes.NewBuffer(nil))
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not delete service "+keptnservice.Name)
 	}

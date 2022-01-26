@@ -41,8 +41,9 @@ type KeptnShipyardStage struct {
 
 // KeptnShipyardStatus defines the observed state of KeptnShipyard
 type KeptnShipyardStatus struct {
-	ProjectExists   bool   `json:"projectExists,omitempty"`
-	LastAppliedHash string `json:"lastAppliedHash,omitempty"`
+	ProjectExists    bool   `json:"projectExists,omitempty"`
+	LastAppliedHash  string `json:"lastAppliedHash,omitempty"`
+	LastUploadedHash string `json:"LastUploadedHash,omitempty"`
 }
 
 //+kubebuilder:object:root=true

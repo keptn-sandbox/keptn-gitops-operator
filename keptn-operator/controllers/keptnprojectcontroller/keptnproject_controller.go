@@ -81,6 +81,7 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		r.KeptnAPI = "http://api-gateway-nginx/api"
 	}
 
+	r.KeptnAPIScheme, ok = os.LookupEnv("KEPTN_API_SCHEME")
 	if r.KeptnAPIScheme == "" {
 		r.KeptnAPIScheme = "http"
 	}
@@ -156,7 +157,7 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			r.ReqLogger.Error(err, "Could not create shipyard")
 			return ctrl.Result{RequeueAfter: ReconcileRetryInterval}, err
 		}
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: ReconcileRetryInterval, Requeue: true}, nil
 	}
 
 	shipyard.Namespace = req.Namespace
@@ -243,7 +244,7 @@ func (r *KeptnProjectReconciler) createProject(ctx context.Context, project *api
 		Timeout: 30 * time.Second,
 	}
 
-	secret, err := decryptSecret(project.Spec.Password)
+	secret, err := utils.DecryptSecret(project.Spec.Password)
 	if err != nil {
 		r.ReqLogger.Error(err, "could not decrypt secret")
 		return err
@@ -253,7 +254,7 @@ func (r *KeptnProjectReconciler) createProject(ctx context.Context, project *api
 		"gitRemoteURL": project.Spec.Repository,
 		"gitToken":     secret,
 		"gitUser":      project.Spec.Username,
-		"shipyard":     "YXBpVmVyc2lvbjogInNwZWMua2VwdG4uc2gvMC4yLjAiCmtpbmQ6ICJTaGlweWFyZCIKbWV0YWRhdGE6CiAgbmFtZTogInBvZHRhdG8taGVhZCIKc3BlYzoKICBzdGFnZXM6CiAgICAtIG5hbWU6ICJkdW1teSIKICAgICAgc2VxdWVuY2VzOgogICAgICAgIC0gbmFtZTogImR1bW15IgogICAgICAgICAgdGFza3M6CiAgICAgICAgICAgIC0gbmFtZTogImR1bW15Igo=",
+		"shipyard":     "YXBpVmVyc2lvbjogInNwZWMua2VwdG4uc2gvMC4yLjAiCmtpbmQ6ICJTaGlweWFyZCIKbWV0YWRhdGE6CiAgbmFtZTogInBvZHRhdG8taGVhZCIKc3BlYzoKICBzdGFnZXM6CiAgICAtIG5hbWU6ICJkZXYiCiAgICAgIHNlcXVlbmNlczoKICAgICAgICAtIG5hbWU6ICJkdW1teSIKICAgICAgICAgIHRhc2tzOgogICAgICAgICAgICAtIG5hbWU6ICJkdW1teSIKICAgIC0gbmFtZTogImhhcmRlbmluZyIKICAgICAgc2VxdWVuY2VzOgogICAgICAgIC0gbmFtZTogImR1bW15IgogICAgICAgICAgdGFza3M6CiAgICAgICAgICAgIC0gbmFtZTogImR1bW15IgogICAgLSBuYW1lOiAicHJvZHVjdGlvbiIKICAgICAgc2VxdWVuY2VzOgogICAgICAgIC0gbmFtZTogImR1bW15IgogICAgICAgICAgdGFza3M6CiAgICAgICAgICAgIC0gbmFtZTogImR1bW15IgoK",
 		"name":         project.Name,
 	})
 

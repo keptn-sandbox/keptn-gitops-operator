@@ -9,6 +9,8 @@ resources:
 - bases/keptn.sh_keptnstages.yaml
 - bases/keptn.sh_keptnsequences.yaml
 - bases/keptn.sh_keptnscheduledexecs.yaml
+- bases/keptn.sh_keptnservicedeployments.yaml
+- bases/keptn.sh_keptndeploymentcontexts.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
@@ -21,6 +23,8 @@ patchesStrategicMerge:
 #- patches/webhook_in_keptnstages.yaml
 #- patches/webhook_in_keptnsequences.yaml
 #- patches/webhook_in_keptnscheduledexecs.yaml
+#- patches/webhook_in_keptnservicedeployments.yaml
+#- patches/webhook_in_keptndeploymentcontexts.yaml
 #+kubebuilder:scaffold:crdkustomizewebhookpatch
 
 # [CERTMANAGER] To enable cert-manager, uncomment all the sections with [CERTMANAGER] prefix.
@@ -32,6 +36,8 @@ patchesStrategicMerge:
 #- patches/cainjection_in_keptnstages.yaml
 #- patches/cainjection_in_keptnsequences.yaml
 #- patches/cainjection_in_keptnscheduledexecs.yaml
+#- patches/cainjection_in_keptnservicedeployments.yaml
+#- patches/cainjection_in_keptndeploymentcontexts.yaml
 #+kubebuilder:scaffold:crdkustomizecainjectionpatch
 
 # the following config is for teaching kustomize how to do kustomization for CRDs.

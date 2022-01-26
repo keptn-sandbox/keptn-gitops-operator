@@ -135,6 +135,32 @@ rules:
 - apiGroups:
   - keptn.sh
   resources:
+  - keptnservicedeployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservicedeployments/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservicedeployments/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
   - keptnservices
   verbs:
   - create

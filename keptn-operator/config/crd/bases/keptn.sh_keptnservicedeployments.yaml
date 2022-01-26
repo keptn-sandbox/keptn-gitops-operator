@@ -1,0 +1,99 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.7.0
+  creationTimestamp: null
+  name: keptnservicedeployments.keptn.sh
+spec:
+  group: keptn.sh
+  names:
+    kind: KeptnServiceDeployment
+    listKind: KeptnServiceDeploymentList
+    plural: keptnservicedeployments
+    singular: keptnservicedeployment
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: KeptnServiceDeployment is the Schema for the keptnservicedeployments
+          API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: KeptnServiceDeploymentSpec defines the desired state of KeptnServiceDeployment
+            properties:
+              author:
+                type: string
+              project:
+                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                  Important: Run "make" to regenerate code after modifying this file'
+                type: string
+              service:
+                type: string
+              sourceCommitHash:
+                type: string
+              stage:
+                type: string
+              version:
+                type: string
+            required:
+            - project
+            - service
+            - stage
+            - version
+            type: object
+          status:
+            description: KeptnServiceDeploymentStatus defines the observed state of
+              KeptnServiceDeployment
+            properties:
+              deployedVersion:
+                type: string
+              keptnContext:
+                type: string
+              lastAppliedHash:
+                type: string
+              prerequisites:
+                properties:
+                  projectExists:
+                    type: boolean
+                  serviceExists:
+                    type: boolean
+                  stageExists:
+                    type: boolean
+                type: object
+              progress:
+                properties:
+                  artifactAvailable:
+                    type: boolean
+                  deploymentTriggered:
+                    type: boolean
+                type: object
+              updatePending:
+                type: boolean
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

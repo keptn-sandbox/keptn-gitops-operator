@@ -1,0 +1,60 @@
+{
+  "apiVersion": "v1",
+  "kind": "Namespace",
+  "metadata": {
+    "annotations": {
+      "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"annotations\":{},\"labels\":{\"aws.cdk.eks/prune-c8bcb26f4c8b7074d892fe2f2612aeb6c587fa23d8\":\"\"},\"name\":\"keptn\"}}\n"
+    },
+    "creationTimestamp": "2022-01-13T10:17:51Z",
+    "deletionTimestamp": "2022-01-25T16:24:10Z",
+    "labels": {
+      "aws.cdk.eks/prune-c8bcb26f4c8b7074d892fe2f2612aeb6c587fa23d8": ""
+    },
+    "name": "keptn",
+    "resourceVersion": "4252949",
+    "uid": "165d9092-d136-4d10-9b4b-7c37517511a2"
+  },
+  "spec": {
+    "finalizers": []
+  },
+  "status": {
+    "conditions": [
+      {
+        "lastTransitionTime": "2022-01-25T16:24:25Z",
+        "message": "All resources successfully discovered",
+        "reason": "ResourcesDiscovered",
+        "status": "False",
+        "type": "NamespaceDeletionDiscoveryFailure"
+      },
+      {
+        "lastTransitionTime": "2022-01-25T16:24:25Z",
+        "message": "All legacy kube types successfully parsed",
+        "reason": "ParsedGroupVersions",
+        "status": "False",
+        "type": "NamespaceDeletionGroupVersionParsingFailure"
+      },
+      {
+        "lastTransitionTime": "2022-01-25T16:24:25Z",
+        "message": "All content successfully deleted, may be waiting on finalization",
+        "reason": "ContentDeleted",
+        "status": "False",
+        "type": "NamespaceDeletionContentFailure"
+      },
+      {
+        "lastTransitionTime": "2022-01-25T16:24:25Z",
+        "message": "Some resources are remaining: keptnprojects.keptn.sh has 1 resource instances, keptnservices.keptn.sh has 1 resource instances",
+        "reason": "SomeResourcesRemain",
+        "status": "True",
+        "type": "NamespaceContentRemaining"
+      },
+      {
+        "lastTransitionTime": "2022-01-25T16:24:25Z",
+        "message": "Some content in the namespace has finalizers remaining: keptnprojects.keptn.sh/finalizer in 1 resource instances, keptnservices.keptn.sh/finalizer in 1 resource instances",
+        "reason": "SomeFinalizersRemain",
+        "status": "True",
+        "type": "NamespaceFinalizersRemaining"
+      }
+    ],
+    "phase": "Terminating"
+  }
+}

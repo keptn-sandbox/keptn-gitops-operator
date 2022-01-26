@@ -23,20 +23,17 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// KeptnProjectSpec defines the desired state of KeptnProject
-type KeptnProjectSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of KeptnProject. Edit keptnproject_types.go to remove/update
-	Repository    string `json:"repository,omitempty"`
-	Username      string `json:"username,omitempty"`
-	Password      string `json:"password,omitempty"`
-	DefaultBranch string `json:"defaultBranch,omitempty"`
+// KeptnDeploymentContextSpec defines the desired state of KeptnDeploymentContext
+type KeptnDeploymentContextSpec struct {
+	Project string `json:"project"`
+	Service string `json:"service"`
+	Version string `json:"version"`
 }
 
-// KeptnProjectStatus defines the observed state of KeptnProject
-type KeptnProjectStatus struct {
+// KeptnDeploymentContextStatus defines the observed state of KeptnDeploymentContext
+type KeptnDeploymentContextStatus struct {
+	LastAppliedHash map[string]string `json:"lastAppliedHash,omitempty"`
+	KeptnContext    string            `json:"keptnContext"`
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 }
@@ -44,20 +41,24 @@ type KeptnProjectStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// KeptnProject is the Schema for the keptnprojects API
-type KeptnProject struct {
+// KeptnDeploymentContext is the Schema for the keptndeploymentcontexts API
+type KeptnDeploymentContext struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   KeptnProjectSpec   `json:"spec,omitempty"`
-	Status KeptnProjectStatus `json:"status,omitempty"`
+	Spec   KeptnDeploymentContextSpec   `json:"spec,omitempty"`
+	Status KeptnDeploymentContextStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// KeptnProjectList contains a list of KeptnProject
-type KeptnProjectList struct {
+// KeptnDeploymentContextList contains a list of KeptnDeploymentContext
+type KeptnDeploymentContextList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []KeptnProject `json:"items"`
+	Items           []KeptnDeploymentContext `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&KeptnDeploymentContext{}, &KeptnDeploymentContextList{})
 }

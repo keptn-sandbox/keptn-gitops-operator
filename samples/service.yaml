@@ -1,26 +1,3 @@
-apiVersion: "keptn.sh/v1"
-kind: "KeptnService"
-metadata:
-  name: "arms"
-spec:
-  project: "podtato-head"
-
----
-apiVersion: "keptn.sh/v1"
-kind: "KeptnService"
-metadata:
-  name: "legs"
-spec:
-  project: "podtato-head"
-
----
-apiVersion: "keptn.sh/v1"
-kind: "KeptnService"
-metadata:
-  name: "hats"
-spec:
-  project: "podtato-head"
-
 ---
 apiVersion: "keptn.sh/v1"
 kind: "KeptnService"
