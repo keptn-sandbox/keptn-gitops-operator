@@ -6,7 +6,7 @@ APP_VERSION=$2 # e.g., 0.7.2-next.0+1234
 IMAGE=$3 # e.g., job-executor-service
 CHART_DIR=$4
 
-if [ $# -ne 3 ]; then
+if [ $# -ne 4 ]; then
   echo "Usage: $0 VERSION APP_VERSION IMAGE"
   exit
 fi
