@@ -123,20 +123,21 @@ jobs:
           username: ${{ secrets.REGISTRY_USER }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      - name: Docker Build
-        id: docker_build
-        uses: ./.github/actions/docker-build
-        with:
-          TAGS: |
-            ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}
-            ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}.${{ env.DATETIME }}
-          BUILD_ARGS: |
-            version=${{ env.VERSION }}
-          CONTEXT: ${{ matrix.service }}
-          DOCKERFILE: ${{ matrix.service }}/docker/Dockerfile
-          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-          PUSH: false
+        - name: Docker Build
+          id: docker_build_push
+          uses: ./.github/actions/docker-build
+          with:
+            TAGS: |
+              ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}
+              ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}.${{ env.DATETIME }}
+            BUILD_ARGS: |
+              version=${{ env.VERSION }}
+            CONTEXT: ${{ matrix.service }}
+            DOCKERFILE: ${{ matrix.service }}/docker/Dockerfile
+            REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+            REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+            PUSH: ${{(github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository)}}
+
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -145,16 +146,13 @@ jobs:
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results.sarif'
+          exit-code: 1
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: 'trivy-results.sarif'
 
-      - name: Push Docker Image
-        run: |
-          docker push ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}
-          docker push ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}.${{ env.DATETIME }}
 
       - id: report_docker_build_to_pr
         name: Report Docker Build to PR
