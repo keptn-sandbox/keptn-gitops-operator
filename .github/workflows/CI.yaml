@@ -117,6 +117,12 @@ jobs:
         with:
           env-file: .ci_env
 
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Docker Build
         id: docker_build
         uses: ./.github/actions/docker-build
@@ -145,20 +151,10 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
 
-      - name: Docker Build
-        id: docker_build_push
-        uses: ./.github/actions/docker-build
-        with:
-          TAGS: |
-            ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}
-            ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}.${{ env.DATETIME }}
-          BUILD_ARGS: |
-            version=${{ env.VERSION }}
-          CONTEXT: ${{ matrix.service }}
-          DOCKERFILE: ${{ matrix.service }}/docker/Dockerfile
-          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-          PUSH: ${{(github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository)}}
+      - name: Push Docker Image
+        run: |
+          docker push ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}
+          docker push ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}.${{ env.DATETIME }}
 
       - id: report_docker_build_to_pr
         name: Report Docker Build to PR
@@ -171,7 +167,6 @@ jobs:
           message: |
             The following Docker Images have been built:
             * ${{ fromJSON(steps.docker_build.outputs.BUILD_METADATA)['image.name'] }}
-
 
   helm_chart_build:
     needs: [prepare_ci_run, docker_build]
