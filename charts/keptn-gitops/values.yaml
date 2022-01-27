@@ -7,4 +7,5 @@ keptn-operator:
   image: keptnsandbox/gitops-keptn-operator:latest
 
 promotion-service:
+  enabled: true
   image: keptnsandbox/gitops-promotion-service:latest

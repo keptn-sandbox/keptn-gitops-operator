@@ -24,9 +24,6 @@ version: 0.1.0
 appVersion: "0.11.3"
 
 dependencies:
-- name: keptn
-  version: "0.11.3"
-  repository: "https://storage.googleapis.com/keptn-installer"
 - condition: gitops-operator.enabled
   name: gitops-operator
   version: "0.1.0"
@@ -36,7 +33,3 @@ dependencies:
 - condition: promotion-service.enabled
   name: promotion-service
   version: "0.11.3"
-- condition: helm-service.enabled
-  name: helm-service
-  version: "0.11.3"
-  repository: https://storage.googleapis.com/keptn-installer
