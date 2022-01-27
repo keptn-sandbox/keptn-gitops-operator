@@ -117,26 +117,22 @@ jobs:
         with:
           env-file: .ci_env
 
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.REGISTRY_USER }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
 
-        - name: Docker Build
-          id: docker_build_push
-          uses: ./.github/actions/docker-build
-          with:
-            TAGS: |
-              ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}
-              ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}.${{ env.DATETIME }}
-            BUILD_ARGS: |
-              version=${{ env.VERSION }}
-            CONTEXT: ${{ matrix.service }}
-            DOCKERFILE: ${{ matrix.service }}/docker/Dockerfile
-            REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
-            REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-            PUSH: ${{(github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository)}}
+
+      - name: Docker Build
+        id: docker_build_push
+        uses: ./.github/actions/docker-build
+        with:
+          TAGS: |
+            ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}
+            ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}.${{ env.DATETIME }}
+          BUILD_ARGS: |
+            version=${{ env.VERSION }}
+          CONTEXT: ${{ matrix.service }}
+          DOCKERFILE: ${{ matrix.service }}/docker/Dockerfile
+          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          PUSH: ${{(github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository)}}
 
 
       - name: Run Trivy vulnerability scanner
