@@ -46,7 +46,8 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-mv "${IMAGE}-${VERSION}.tgz" "installer/${IMAGE}-${VERSION}.tgz"
+ls 
+echo mv "${IMAGE}-${VERSION}.tgz" "installer/${IMAGE}-${VERSION}.tgz"
 
 #verify the chart
 helm template "installer/${IMAGE}-${VERSION}.tgz" --dry-run > /dev/null
