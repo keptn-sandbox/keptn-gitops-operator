@@ -21,7 +21,7 @@ if [ -z "$APP_VERSION" ]; then
   APP_VERSION=$VERSION
 fi
 
-if [ -z "$CHART_DIR" ];
+if [ -z "$CHART_DIR" ]; then
   echo "No chart directory set, exiting"
   exit 1
 fi
