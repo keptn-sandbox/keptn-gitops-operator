@@ -1,10 +1,5 @@
 package v1
 
-import (
-	"encoding/json"
-	"gopkg.in/yaml.v3"
-)
-
 ///// v0.2.0 Shipyard Spec ///////
 
 // Shipyard describes a shipyard specification according to Keptn spec 0.2.0
@@ -29,23 +24,4 @@ type ShipyardSpec struct {
 type Stage struct {
 	Name      string     `json:"name" yaml:"name"`
 	Sequences []Sequence `json:"sequences,omitempty" yaml:"sequences,omitempty"`
-}
-
-// DecodeShipyardYAML takes a shipyard string formatted as YAML and decodes it to
-// Shipyard value
-func DecodeShipyardYAML(shipyardYaml []byte) (*Shipyard, error) {
-	shipyardDecoded := &Shipyard{}
-
-	if err := yaml.Unmarshal(shipyardYaml, shipyardDecoded); err != nil {
-		return nil, err
-	}
-	return shipyardDecoded, nil
-}
-
-func Decode(in, out interface{}) error {
-	bytes, err := json.Marshal(in)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(bytes, out)
 }

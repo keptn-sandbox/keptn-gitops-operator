@@ -60,8 +60,8 @@ type KeptnShipyardReconciler struct {
 	KeptnAPIScheme string
 }
 
-const ReconcileErrorInterval = 10 * time.Second
-const ReconcileSuccessInterval = 120 * time.Second
+const reconcileErrorInterval = 10 * time.Second
+const reconcileSuccessInterval = 120 * time.Second
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnshipyards,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnshipyards/status,verbs=get;update;patch
@@ -106,7 +106,7 @@ func (r *KeptnShipyardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 		// Error reading the object - requeue the request.
 		r.ReqLogger.Error(err, "Could not fetch shipyard object")
-		return reconcile.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+		return reconcile.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 	}
 
 	shipyardSpecVersion := &v1.ConfigMap{}
@@ -121,12 +121,12 @@ func (r *KeptnShipyardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			err := controllerutil.SetControllerReference(shipyardInstance, shipyardSpecVersion, r.Scheme)
 			if err != nil {
 				r.ReqLogger.Error(err, "could not set controller reference")
-				return reconcile.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+				return reconcile.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 			}
 			err = r.Client.Create(ctx, shipyardSpecVersion)
 			if err != nil {
 				r.ReqLogger.Error(err, "Could not create version configmap")
-				return reconcile.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+				return reconcile.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 			}
 		}
 		return ctrl.Result{Requeue: true}, nil
@@ -139,7 +139,7 @@ func (r *KeptnShipyardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	projectExists, err := utils.CheckKeptnProjectExists(ctx, req, r.Client, r.KeptnAPI, r.KeptnAPIScheme, shipyardInstance.Spec.Project)
 	if err != nil {
-		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 	}
 	if !projectExists {
 		r.Recorder.Event(shipyardInstance, "Warning", "KeptnProjectNotFound", fmt.Sprintf("Keptn project %s does not exist", shipyardInstance.Spec.Project))
@@ -147,7 +147,7 @@ func (r *KeptnShipyardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		err := r.Client.Status().Update(ctx, shipyardInstance)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of shipyard "+shipyardInstance.Spec.Project)
-			return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
 	} else if shipyardInstance.Status.ProjectExists == false {
@@ -155,7 +155,7 @@ func (r *KeptnShipyardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		err := r.Client.Status().Update(ctx, shipyardInstance)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of shipyard "+shipyardInstance.Spec.Project)
-			return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -165,26 +165,26 @@ func (r *KeptnShipyardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	shipyardString, err := yaml.Marshal(keptnShipyard)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not marshal shipyard")
-		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 	}
 
 	err = r.updateShipyard(ctx, req.Namespace, shipyardInstance.Spec.Project, shipyardString)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not update shipyard")
-		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 	}
 
 	shipyardSpecVersion.Data["Hash"] = specHash
 	err = r.Client.Update(ctx, shipyardSpecVersion)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not update status", "KeptnShipyard", shipyardInstance.Name)
-		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 	} else {
 		r.ReqLogger.Info("Updated status", "status", shipyardInstance.Status)
 	}
 
 	r.ReqLogger.Info("Finished Reconciling KeptnShipyard")
-	return ctrl.Result{RequeueAfter: ReconcileSuccessInterval}, nil
+	return ctrl.Result{RequeueAfter: reconcileSuccessInterval}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

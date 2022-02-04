@@ -12,6 +12,7 @@ import (
 	"strings"
 )
 
+//DecryptSecret decrypts a given secret, returns the string if only a plaintext secre is given
 func DecryptSecret(secret string) (string, error) {
 	data := strings.Split(secret, ":")
 

@@ -12,6 +12,7 @@ import (
 const shipyardAPIVersion = "spec.keptn.sh/0.2.2"
 const shipyardKind = "KeptnShipyard"
 
+//UpdateShipyard triggers the update of the shipyard object
 func UpdateShipyard(ctx context.Context, clt client.Client, shipyard keptnv1.KeptnShipyard, shipyardHash string, namespace string) error {
 	shipyard.Namespace = namespace
 	shipyard.Status.LastAppliedHash = GetHashStructure(shipyard.Spec.Shipyard)
@@ -33,13 +34,14 @@ func UpdateShipyard(ctx context.Context, clt client.Client, shipyard keptnv1.Kep
 	return nil
 }
 
+//CreateShipyard creates a shipyard object
 func CreateShipyard(ctx context.Context, clt client.Client, project string) (keptnv1.KeptnShipyard, error) {
 	shipyard := keptnv1.KeptnShipyard{}
 
 	shipyard.Name = project
 	shipyard.Spec.Project = project
 
-	keptnShipyard, err := ComposeShipyard(ctx, clt, project)
+	keptnShipyard, err := composeShipyard(ctx, clt, project)
 	if err != nil {
 		return shipyard, err
 	}
@@ -52,7 +54,7 @@ func CreateShipyard(ctx context.Context, clt client.Client, project string) (kep
 	return shipyard, nil
 }
 
-func ComposeShipyard(ctx context.Context, clt client.Client, project string) (keptnv1.Shipyard, error) {
+func composeShipyard(ctx context.Context, clt client.Client, project string) (keptnv1.Shipyard, error) {
 	keptnShipyard := keptnv1.Shipyard{
 		ApiVersion: shipyardAPIVersion,
 		Kind:       shipyardKind,
@@ -107,7 +109,7 @@ func composeKeptnStage(stage keptnv1.KeptnStage, sequences *keptnv1.KeptnSequenc
 
 func getKeptnStages(ctx context.Context, clt client.Client, project string) ([]keptnv1.KeptnStage, error) {
 	keptnStageList := &keptnv1.KeptnStageList{}
-	stageList := []keptnv1.KeptnStage{}
+	var stageList []keptnv1.KeptnStage
 
 	fmt.Println(project)
 	err := clt.List(ctx, keptnStageList)
@@ -133,6 +135,7 @@ func getKeptnSequence(ctx context.Context, clt client.Client) (*keptnv1.KeptnSeq
 	return sequenceList, nil
 }
 
+//CheckKeptnShipyard checks if a keptn shipyard object exists
 func CheckKeptnShipyard(ctx context.Context, req ctrl.Request, client client.Client, project string) (bool, string) {
 	shipyardRes := &keptnv1.KeptnShipyard{}
 

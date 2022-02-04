@@ -24,6 +24,7 @@ func GetHashStructure(i interface{}) string {
 	return strconv.FormatUint(hash, 10)
 }
 
+//CheckResponseCode checks if the response code meets an expected one
 func CheckResponseCode(response *nethttp.Response, expectedCode int) error {
 	if response.StatusCode != expectedCode {
 		responseBody, err := ioutil.ReadAll(response.Body)

@@ -47,8 +47,8 @@ type KeptnStageReconciler struct {
 	KeptnAPIScheme string
 }
 
-const ReconcileErrorInterval = 10 * time.Second
-const ReconcileSuccessInterval = 120 * time.Second
+const reconcileErrorInterval = 10 * time.Second
+const reconcileSuccessInterval = 120 * time.Second
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnstages,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnstages/status,verbs=get;update;patch
@@ -83,22 +83,22 @@ func (r *KeptnStageReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if err != nil {
 		fmt.Println(err)
 		r.ReqLogger.Error(err, "Could not create shipyard")
-		return ctrl.Result{RequeueAfter: ReconcileErrorInterval}, err
+		return ctrl.Result{RequeueAfter: reconcileErrorInterval}, err
 	}
 
 	shipyardPresent, shipyardHash := utils.CheckKeptnShipyard(ctx, req, r.Client, keptnstage.Spec.Project)
 	if !shipyardPresent {
-		return ctrl.Result{RequeueAfter: ReconcileErrorInterval, Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: reconcileErrorInterval, Requeue: true}, nil
 	}
 
 	err = utils.UpdateShipyard(ctx, r.Client, shipyard, shipyardHash, req.Namespace)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not update shipyard")
-		return ctrl.Result{RequeueAfter: ReconcileErrorInterval, Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: reconcileErrorInterval, Requeue: true}, nil
 	}
 
 	r.ReqLogger.Info("Finished Reconciling KeptnStage")
-	return ctrl.Result{RequeueAfter: ReconcileSuccessInterval}, nil
+	return ctrl.Result{RequeueAfter: reconcileSuccessInterval}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

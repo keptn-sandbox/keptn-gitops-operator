@@ -106,7 +106,7 @@ func (r *KeptnScheduledExecReconciler) Reconcile(ctx context.Context, req ctrl.R
 		fmt.Println("Would trigger execution")
 		seq := apiv1.KeptnSequenceExecution{
 			ObjectMeta: v1.ObjectMeta{
-				GenerateName: string("scheduledexecution-"),
+				GenerateName: "scheduledexecution-",
 				Namespace:    req.Namespace,
 			},
 			Spec: keptnexec.Spec.SequenceExecutionTemplate,

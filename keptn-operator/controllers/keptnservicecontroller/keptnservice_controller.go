@@ -56,8 +56,8 @@ type KeptnServiceReconciler struct {
 	KeptnAPIToken string
 }
 
-const ReconcileErrorInterval = 10 * time.Second
-const ReconcileSuccessInterval = 120 * time.Second
+const reconcileErrorInterval = 10 * time.Second
+const reconcileSuccessInterval = 120 * time.Second
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnservices,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnservices/status,verbs=get;update;patch
@@ -90,7 +90,7 @@ func (r *KeptnServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	token, err := utils.GetKeptnToken(ctx, r.Client, req.Namespace)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not get Keptn Token")
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, nil
 	}
 	r.KeptnAPIToken = token
 
@@ -103,7 +103,7 @@ func (r *KeptnServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			return ctrl.Result{Requeue: true}, nil
 		}
 		r.ReqLogger.Error(err, "Failed to get the KeptnService")
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, nil
 	}
 
 	// name of our custom finalizer
@@ -114,7 +114,7 @@ func (r *KeptnServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		// The object is not being deleted, so if it does not have our finalizer,
 		// then lets add the finalizer and update the object. This is equivalent
 		// registering our finalizer.
-		if !containsString(keptnservice.GetFinalizers(), myFinalizerName) {
+		if !utils.ContainsString(keptnservice.GetFinalizers(), myFinalizerName) {
 			controllerutil.AddFinalizer(keptnservice, myFinalizerName)
 			if err := r.Update(ctx, keptnservice); err != nil {
 				return ctrl.Result{}, err
@@ -122,7 +122,7 @@ func (r *KeptnServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 	} else {
 		// The object is being deleted
-		if containsString(keptnservice.GetFinalizers(), myFinalizerName) {
+		if utils.ContainsString(keptnservice.GetFinalizers(), myFinalizerName) {
 			// our finalizer is present, so lets handle any external dependency
 			if err := r.deleteKeptnService(keptnservice); err != nil {
 				// if fail to delete the external dependency here, return with error
@@ -147,6 +147,7 @@ func (r *KeptnServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		err := r.Client.Status().Update(ctx, keptnservice)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of project "+keptnservice.Spec.Project)
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 		}
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	} else if keptnservice.Status.ProjectExists == false {
@@ -154,6 +155,7 @@ func (r *KeptnServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		err := r.Client.Status().Update(ctx, keptnservice)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of project "+keptnservice.Spec.Project)
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -161,12 +163,13 @@ func (r *KeptnServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if !r.checkIfServiceExists(keptnservice.Spec.Project, keptnservice.Spec.Service) {
 		err := r.createService(keptnservice.Spec.Service, keptnservice.Spec.Project)
 		if err != nil {
-			fmt.Println("Could not create service")
+			r.ReqLogger.Error(err, "Could not create service "+keptnservice.Spec.Service)
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 		}
 	}
 
 	r.ReqLogger.Info("Finished Reconciling KeptnService")
-	return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	return ctrl.Result{Requeue: true, RequeueAfter: reconcileSuccessInterval}, err
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -188,14 +191,6 @@ func (r *KeptnServiceReconciler) checkKeptnProject(ctx context.Context, req ctrl
 }
 
 // Helper functions to check and remove string from a slice of strings.
-func containsString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
-}
 
 func (r *KeptnServiceReconciler) deleteKeptnService(keptnservice *apiv1.KeptnService) error {
 	httpclient := nethttp.Client{

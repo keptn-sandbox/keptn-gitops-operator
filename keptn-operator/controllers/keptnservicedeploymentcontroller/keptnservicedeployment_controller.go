@@ -59,8 +59,8 @@ type KeptnServiceDeploymentReconciler struct {
 	KeptnAPIToken string
 }
 
-const ReconcileErrorInterval = 10 * time.Second
-const ReconcileSuccessInterval = 120 * time.Second
+const reconcileErrorInterval = 10 * time.Second
+const reconcileSuccessInterval = 120 * time.Second
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnservicedeployments,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnservicedeployments/status,verbs=get;update;patch
@@ -93,7 +93,7 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 	token, err := utils.GetKeptnToken(ctx, r.Client, req.Namespace)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not get Keptn Token")
-		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 	}
 	r.KeptnAPIToken = token
 
@@ -106,7 +106,7 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 			return ctrl.Result{Requeue: true}, nil
 		}
 		r.ReqLogger.Error(err, "Failed to get the KeptnServiceDeployment")
-		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 	}
 
 	if !r.checkKeptnProject(ctx, req, ksd.Spec.Project) {
@@ -116,7 +116,7 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 		err := r.Client.Status().Update(ctx, ksd)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of KeptnServiceDeployment "+ksd.Name)
-			return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 		}
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	} else if ksd.Status.Prerequisites.ProjectExists == false {
@@ -124,9 +124,9 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 		err := r.Client.Status().Update(ctx, ksd)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of KeptnServiceDeployment "+ksd.Name)
-			return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 		}
-		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 	}
 
 	service, _, serviceExists := r.checkIfServiceExists(ctx, req, ksd.Spec.Project, ksd.Spec.Service)
@@ -138,7 +138,7 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 		err := r.Client.Status().Update(ctx, ksd)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of ksd "+ksd.Name)
-			return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 		}
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	} else if ksd.Status.Prerequisites.ServiceExists == false {
@@ -146,9 +146,9 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 		err := r.Client.Status().Update(ctx, ksd)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of ksd "+ksd.Name)
-			return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 		}
-		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileSuccessInterval}, nil
+		return ctrl.Result{Requeue: true, RequeueAfter: reconcileSuccessInterval}, nil
 	}
 
 	/*
@@ -253,7 +253,7 @@ func (r *KeptnServiceDeploymentReconciler) checkKeptnProject(ctx context.Context
 }
 
 func (r *KeptnServiceDeploymentReconciler) checkIfServiceExists(ctx context.Context, req ctrl.Request, project string, service string) (kservice apiv1.KeptnService, stages []*models.Stage, exists bool) {
-	serviceRes, err := r.ServicesList(ctx, req, project, service)
+	serviceRes, err := r.servicesList(ctx, req, project, service)
 	if err != nil {
 		return serviceRes, nil, false
 	}
@@ -369,7 +369,7 @@ func (r *KeptnServiceDeploymentReconciler) triggerTask(deployment *apiv1.KeptnSe
 	return kcontext.KeptnContext, err
 }
 
-func (r *KeptnServiceDeploymentReconciler) ServicesList(ctx context.Context, req ctrl.Request, project string, service string) (apiv1.KeptnService, error) {
+func (r *KeptnServiceDeploymentReconciler) servicesList(ctx context.Context, req ctrl.Request, project string, service string) (apiv1.KeptnService, error) {
 	serviceList := &apiv1.KeptnServiceList{}
 	opts := []client.ListOption{
 		client.InNamespace(req.Namespace),
@@ -379,12 +379,12 @@ func (r *KeptnServiceDeploymentReconciler) ServicesList(ctx context.Context, req
 		return apiv1.KeptnService{}, err
 	}
 	if len(serviceList.Items) == 0 {
-		return apiv1.KeptnService{}, fmt.Errorf("No service found")
+		return apiv1.KeptnService{}, fmt.Errorf("no service found")
 	}
 	for _, svc := range serviceList.Items {
 		if svc.Spec.Project == project && svc.Spec.Service == service {
 			return svc, nil
 		}
 	}
-	return apiv1.KeptnService{}, fmt.Errorf("No service found")
+	return apiv1.KeptnService{}, fmt.Errorf("no service found")
 }

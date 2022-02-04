@@ -55,7 +55,7 @@ type KeptnProjectReconciler struct {
 	KeptnAPIToken string
 }
 
-const ReconcileRetryInterval = 10 * time.Second
+const reconcileRetryInterval = 10 * time.Second
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnprojects,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnprojects/status,verbs=get;update;patch
@@ -143,15 +143,15 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		err := r.createProject(keptnproject)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not create project")
-			return ctrl.Result{RequeueAfter: ReconcileRetryInterval}, err
+			return ctrl.Result{RequeueAfter: reconcileRetryInterval}, err
 		}
-		return ctrl.Result{RequeueAfter: ReconcileRetryInterval}, nil
+		return ctrl.Result{RequeueAfter: reconcileRetryInterval}, nil
 	}
 
 	shipyard, err := utils.CreateShipyard(ctx, r.Client, keptnproject.Name)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not create shipyard")
-		return ctrl.Result{RequeueAfter: ReconcileRetryInterval}, err
+		return ctrl.Result{RequeueAfter: reconcileRetryInterval}, err
 	}
 
 	shipyardPresent, shipyardHash := utils.CheckKeptnShipyard(ctx, req, r.Client, keptnproject.Name)
@@ -167,18 +167,19 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		err = r.Client.Create(ctx, &shipyard)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not create shipyard")
-			return ctrl.Result{RequeueAfter: ReconcileRetryInterval}, err
+			return ctrl.Result{RequeueAfter: reconcileRetryInterval}, err
 		}
-		return ctrl.Result{RequeueAfter: ReconcileRetryInterval, Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: reconcileRetryInterval, Requeue: true}, nil
 	}
 
 	err = utils.UpdateShipyard(ctx, r.Client, shipyard, shipyardHash, req.Namespace)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not update shipyard")
+		return ctrl.Result{RequeueAfter: reconcileRetryInterval}, nil
 	}
 
 	r.ReqLogger.Info("Finished Reconciling KeptnProject")
-	return ctrl.Result{RequeueAfter: ReconcileRetryInterval}, nil
+	return ctrl.Result{RequeueAfter: reconcileRetryInterval}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

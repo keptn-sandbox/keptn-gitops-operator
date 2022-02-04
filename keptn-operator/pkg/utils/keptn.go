@@ -7,19 +7,9 @@ import (
 	apiutils "github.com/keptn/go-utils/pkg/api/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"os"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-const defaultKeptnControlPlaneAPIURL = "http://shipyard-controller.keptn:8080"
-
-func GetKeptnAPIURL() interface{} {
-	if apiURL := os.Getenv("KEPTN_CONTROL_PLANE_API_URL"); apiURL != "" {
-		return apiURL
-	}
-	return defaultKeptnControlPlaneAPIURL
-}
 
 // FilterProjects returns an array of projects with the specified name
 func FilterProjects(projects []*models.Project, projectName string) []*models.Project {
@@ -53,6 +43,7 @@ func GetKeptnToken(ctx context.Context, client client.Client, namespace string) 
 	return string(keptnToken.Data["keptn-api-token"]), nil
 }
 
+//CheckKeptnProjectExists queries the keptn api if a project exists
 func CheckKeptnProjectExists(ctx context.Context, req ctrl.Request, clt client.Client, apiUrl string, apiScheme string, project string) (bool, error) {
 
 	token, err := GetKeptnToken(ctx, clt, req.Namespace)
