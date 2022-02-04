@@ -1,4 +1,4 @@
-package controllers
+package types
 
 import (
 	"github.com/go-git/go-git/v5"
@@ -32,16 +32,16 @@ type KeptnArtifactMetadataSpec struct {
 }
 
 type configurationData struct {
-	credentials *gitRepositoryConfig
+	credentials *GitRepositoryConfig
 	repo        *git.Repository
 	tmpDir      string
 	stages      []DirectoryData
 	services    map[DirectoryData]KeptnArtifactMetadataSpec
 }
 
-type gitRepositoryConfig struct {
-	remoteURI string
-	user      string
-	token     string
-	branch    string
+type GitRepositoryConfig struct {
+	RemoteURI string
+	User      string
+	Token     string
+	Branch    string
 }

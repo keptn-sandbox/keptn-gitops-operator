@@ -1,4 +1,4 @@
-package controllers
+package common
 
 import (
 	"crypto/rand"

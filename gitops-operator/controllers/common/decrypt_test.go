@@ -1,4 +1,4 @@
-package controllers
+package common
 
 import (
 	"encoding/base64"
