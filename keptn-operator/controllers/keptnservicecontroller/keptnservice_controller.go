@@ -52,7 +52,12 @@ type KeptnServiceReconciler struct {
 	KeptnAPI string
 	// KeptnAPIScheme contains the Scheme (http/https) of the Keptn Control Plane API
 	KeptnAPIScheme string
+	// KeptnAPIToken contains the Token for the Keptn Control Plane API
+	KeptnAPIToken string
 }
+
+const ReconcileErrorInterval = 10 * time.Second
+const ReconcileSuccessInterval = 120 * time.Second
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnservices,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnservices/status,verbs=get;update;patch
@@ -81,6 +86,14 @@ func (r *KeptnServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if r.KeptnAPIScheme == "" {
 		r.KeptnAPIScheme = "http"
 	}
+
+	token, err := utils.GetKeptnToken(ctx, r.Client, req.Namespace)
+	if err != nil {
+		r.ReqLogger.Error(err, "Could not get Keptn Token")
+		return ctrl.Result{Requeue: true}, nil
+	}
+	r.KeptnAPIToken = token
+
 	keptnservice := &apiv1.KeptnService{}
 
 	if err := r.Client.Get(ctx, req.NamespacedName, keptnservice); err != nil {
@@ -111,7 +124,7 @@ func (r *KeptnServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		// The object is being deleted
 		if containsString(keptnservice.GetFinalizers(), myFinalizerName) {
 			// our finalizer is present, so lets handle any external dependency
-			if err := r.deleteKeptnService(ctx, req.Namespace, keptnservice); err != nil {
+			if err := r.deleteKeptnService(keptnservice); err != nil {
 				// if fail to delete the external dependency here, return with error
 				// so that it can be retried
 				return ctrl.Result{}, err
@@ -145,8 +158,8 @@ func (r *KeptnServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if !r.checkIfServiceExists(ctx, req, keptnservice.Spec.Project, keptnservice.Spec.Service) {
-		err := r.createService(ctx, keptnservice.Spec.Service, req.Namespace, keptnservice.Spec.Project)
+	if !r.checkIfServiceExists(keptnservice.Spec.Project, keptnservice.Spec.Service) {
+		err := r.createService(keptnservice.Spec.Service, keptnservice.Spec.Project)
 		if err != nil {
 			fmt.Println("Could not create service")
 		}
@@ -184,12 +197,10 @@ func containsString(slice []string, s string) bool {
 	return false
 }
 
-func (r *KeptnServiceReconciler) deleteKeptnService(ctx context.Context, namespace string, keptnservice *apiv1.KeptnService) error {
+func (r *KeptnServiceReconciler) deleteKeptnService(keptnservice *apiv1.KeptnService) error {
 	httpclient := nethttp.Client{
 		Timeout: 30 * time.Second,
 	}
-
-	keptnToken := utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, namespace)
 
 	request, err := nethttp.NewRequest("DELETE", r.KeptnAPI+"/controlPlane/v1/project/"+keptnservice.Spec.Project+"/service/"+keptnservice.Spec.Service, bytes.NewBuffer(nil))
 	if err != nil {
@@ -197,7 +208,7 @@ func (r *KeptnServiceReconciler) deleteKeptnService(ctx context.Context, namespa
 	}
 
 	request.Header.Set("content-type", "application/json")
-	request.Header.Set("x-token", keptnToken)
+	request.Header.Set("x-token", r.KeptnAPIToken)
 
 	r.ReqLogger.Info("Deleting Keptn Service " + keptnservice.Name)
 	_, err = httpclient.Do(request)
@@ -207,7 +218,7 @@ func (r *KeptnServiceReconciler) deleteKeptnService(ctx context.Context, namespa
 	return err
 }
 
-func (r *KeptnServiceReconciler) createService(ctx context.Context, service string, namespace string, project string) error {
+func (r *KeptnServiceReconciler) createService(service string, project string) error {
 	httpclient := nethttp.Client{
 		Timeout: 30 * time.Second,
 	}
@@ -216,8 +227,6 @@ func (r *KeptnServiceReconciler) createService(ctx context.Context, service stri
 		"serviceName": service,
 	})
 
-	keptnToken := utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, namespace)
-
 	request, err := nethttp.NewRequest("POST", r.KeptnAPI+"/controlPlane/v1/project/"+project+"/service", bytes.NewBuffer(data))
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not create service "+service)
@@ -225,7 +234,7 @@ func (r *KeptnServiceReconciler) createService(ctx context.Context, service stri
 	}
 
 	request.Header.Set("content-type", "application/json")
-	request.Header.Set("x-token", keptnToken)
+	request.Header.Set("x-token", r.KeptnAPIToken)
 
 	r.ReqLogger.Info("Creating Keptn Service " + service)
 	response, err := httpclient.Do(request)
@@ -240,10 +249,10 @@ func (r *KeptnServiceReconciler) createService(ctx context.Context, service stri
 	return err
 }
 
-func (r *KeptnServiceReconciler) checkIfServiceExists(ctx context.Context, req ctrl.Request, project string, service string) bool {
+func (r *KeptnServiceReconciler) checkIfServiceExists(project string, service string) bool {
 
-	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
-	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.KeptnAPI, utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
+	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, r.KeptnAPIToken, "x-token", nil, r.KeptnAPIScheme)
+	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.KeptnAPI, r.KeptnAPIToken, "x-token", nil, r.KeptnAPIScheme)
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {

@@ -55,7 +55,12 @@ type KeptnServiceDeploymentReconciler struct {
 	KeptnAPI string
 	// KeptnAPIScheme contains the Scheme (http/https) of the Keptn Control Plane API
 	KeptnAPIScheme string
+	// KeptnAPIToken contains the Token for the Keptn Control Plane API
+	KeptnAPIToken string
 }
+
+const ReconcileErrorInterval = 10 * time.Second
+const ReconcileSuccessInterval = 120 * time.Second
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnservicedeployments,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnservicedeployments/status,verbs=get;update;patch
@@ -85,6 +90,13 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 		r.KeptnAPIScheme = "http"
 	}
 
+	token, err := utils.GetKeptnToken(ctx, r.Client, req.Namespace)
+	if err != nil {
+		r.ReqLogger.Error(err, "Could not get Keptn Token")
+		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+	}
+	r.KeptnAPIToken = token
+
 	ksd := &apiv1.KeptnServiceDeployment{}
 
 	if err := r.Client.Get(ctx, req.NamespacedName, ksd); err != nil {
@@ -94,7 +106,7 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 			return ctrl.Result{Requeue: true}, nil
 		}
 		r.ReqLogger.Error(err, "Failed to get the KeptnServiceDeployment")
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
 	}
 
 	if !r.checkKeptnProject(ctx, req, ksd.Spec.Project) {
@@ -104,6 +116,7 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 		err := r.Client.Status().Update(ctx, ksd)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of KeptnServiceDeployment "+ksd.Name)
+			return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
 		}
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	} else if ksd.Status.Prerequisites.ProjectExists == false {
@@ -111,8 +124,9 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 		err := r.Client.Status().Update(ctx, ksd)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of KeptnServiceDeployment "+ksd.Name)
+			return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
 		}
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
 	}
 
 	service, _, serviceExists := r.checkIfServiceExists(ctx, req, ksd.Spec.Project, ksd.Spec.Service)
@@ -124,6 +138,7 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 		err := r.Client.Status().Update(ctx, ksd)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of ksd "+ksd.Name)
+			return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
 		}
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	} else if ksd.Status.Prerequisites.ServiceExists == false {
@@ -131,8 +146,9 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 		err := r.Client.Status().Update(ctx, ksd)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of ksd "+ksd.Name)
+			return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
 		}
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileSuccessInterval}, nil
 	}
 
 	/*
@@ -163,12 +179,12 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 		}
 	*/
 
-	keptncontext, new, err := getKeptnContext(r.Client, ctx, req.Namespace, ksd.Spec.Project, ksd.Spec.Service, ksd.Spec.Version)
+	keptncontext, newcontext, err := getKeptnContext(r.Client, ctx, req.Namespace, ksd.Spec.Project, ksd.Spec.Service, ksd.Spec.Version)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not get KeptnContext for Service Deployment "+ksd.Name)
 	}
 
-	if new {
+	if newcontext {
 		newContext := apiv1.KeptnDeploymentContext{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      ksd.Spec.Project + "-" + ksd.Spec.Service + "-" + ksd.Spec.Version,
@@ -194,7 +210,7 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 	}
 
 	if keptncontext.Status.LastAppliedHash[ksd.Spec.Stage] != utils.GetHashStructure(ksd.Spec) || ksd.Status.UpdatePending {
-		kcontext, err := r.triggerTask(ctx, ksd, req.Namespace, service.Spec.DeploymentEvent, keptncontext.Status.KeptnContext)
+		kcontext, err := r.triggerTask(ksd, service.Spec.DeploymentEvent, keptncontext.Status.KeptnContext)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not trigger task")
 			return ctrl.Result{Requeue: true}, err
@@ -242,8 +258,8 @@ func (r *KeptnServiceDeploymentReconciler) checkIfServiceExists(ctx context.Cont
 		return serviceRes, nil, false
 	}
 
-	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
-	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.KeptnAPI, utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
+	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, r.KeptnAPIToken, "x-token", nil, r.KeptnAPIScheme)
+	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.KeptnAPI, r.KeptnAPIToken, "x-token", nil, r.KeptnAPIScheme)
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {
@@ -290,7 +306,7 @@ func getKeptnContext(client client.Client, ctx context.Context, namespace string
 	return found, false, nil
 }
 
-func (r *KeptnServiceDeploymentReconciler) triggerTask(ctx context.Context, deployment *apiv1.KeptnServiceDeployment, namespace string, deploymentEvent string, shkeptncontext string) (string, error) {
+func (r *KeptnServiceDeploymentReconciler) triggerTask(deployment *apiv1.KeptnServiceDeployment, deploymentEvent string, shkeptncontext string) (string, error) {
 
 	httpclient := nethttp.Client{
 		Timeout: 30 * time.Second,
@@ -323,8 +339,6 @@ func (r *KeptnServiceDeploymentReconciler) triggerTask(ctx context.Context, depl
 		r.ReqLogger.Info("Could not marshal Keptn Trigger Event")
 	}
 
-	keptnToken := utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, namespace)
-
 	r.ReqLogger.Info("Triggering Event sh.keptn.event." + deployment.Spec.Stage + "." + deploymentEvent + " for service " + deployment.Spec.Service)
 	request, err := nethttp.NewRequest("POST", r.KeptnAPI+"/v1/event", bytes.NewBuffer(data))
 	if err != nil {
@@ -333,7 +347,7 @@ func (r *KeptnServiceDeploymentReconciler) triggerTask(ctx context.Context, depl
 	}
 
 	request.Header.Set("content-type", "application/cloudevents+json")
-	request.Header.Set("x-token", keptnToken)
+	request.Header.Set("x-token", r.KeptnAPIToken)
 
 	response, err := httpclient.Do(request)
 	if err != nil {

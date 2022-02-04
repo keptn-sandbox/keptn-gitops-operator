@@ -198,9 +198,13 @@ func (r *KeptnSequenceExecutionReconciler) checkKeptnProject(ctx context.Context
 }
 
 func (r *KeptnSequenceExecutionReconciler) checkIfServiceExists(ctx context.Context, req ctrl.Request, project string, service string) bool {
+	token, err := utils.GetKeptnToken(ctx, r.Client, req.Namespace)
+	if err != nil {
+		r.ReqLogger.Error(err, "Could not get Keptn Token for "+project)
+	}
 
-	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
-	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.KeptnAPI, utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
+	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, token, "x-token", nil, r.KeptnAPIScheme)
+	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.KeptnAPI, token, "x-token", nil, r.KeptnAPIScheme)
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {
@@ -267,7 +271,10 @@ func (r *KeptnSequenceExecutionReconciler) triggerTask(ctx context.Context, exec
 		r.ReqLogger.Info("Could not marshal Keptn Trigger Event")
 	}
 
-	keptnToken := utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, namespace)
+	token, err := utils.GetKeptnToken(ctx, r.Client, namespace)
+	if err != nil {
+		r.ReqLogger.Error(err, "Could not get Keptn Token for "+exec.Spec.Project)
+	}
 
 	r.ReqLogger.Info("Triggering Event " + exec.Spec.Event + " for service " + exec.Spec.Service)
 	request, err := nethttp.NewRequest("POST", r.KeptnAPI+"/v1/event", bytes.NewBuffer(data))
@@ -277,7 +284,7 @@ func (r *KeptnSequenceExecutionReconciler) triggerTask(ctx context.Context, exec
 	}
 
 	request.Header.Set("content-type", "application/cloudevents+json")
-	request.Header.Set("x-token", keptnToken)
+	request.Header.Set("x-token", token)
 
 	response, err := httpclient.Do(request)
 	if err != nil {

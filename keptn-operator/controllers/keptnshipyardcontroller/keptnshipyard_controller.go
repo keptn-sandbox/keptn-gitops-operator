@@ -21,13 +21,10 @@ import (
 	"fmt"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-logr/logr"
-	"github.com/imroc/req"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
-	apiutils "github.com/keptn/go-utils/pkg/api/utils"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	v1 "k8s.io/api/core/v1"
@@ -38,21 +35,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"time"
 
 	apiv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
-	keptnapi "github.com/keptn/go-utils/pkg/api/models"
-	keptnv2 "github.com/keptn/go-utils/pkg/lib/v0_2_0"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
-
-const defaultKeptnControlPlaneAPIURL = "http://shipyard-controller.keptn:8080"
-
-const shipyardAPIVersion = "spec.keptn.sh/0.2.2"
 
 // KeptnShipyardReconciler reconciles a KeptnShipyard object
 type KeptnShipyardReconciler struct {
@@ -69,6 +59,9 @@ type KeptnShipyardReconciler struct {
 	// KeptnAPIScheme contains the Scheme (http/https) of the Keptn Control Plane API
 	KeptnAPIScheme string
 }
+
+const ReconcileErrorInterval = 10 * time.Second
+const ReconcileSuccessInterval = 120 * time.Second
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnshipyards,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnshipyards/status,verbs=get;update;patch
@@ -113,7 +106,7 @@ func (r *KeptnShipyardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 		// Error reading the object - requeue the request.
 		r.ReqLogger.Error(err, "Could not fetch shipyard object")
-		return reconcile.Result{Requeue: true}, err
+		return reconcile.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
 	}
 
 	shipyardSpecVersion := &v1.ConfigMap{}
@@ -127,11 +120,13 @@ func (r *KeptnShipyardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			}
 			err := controllerutil.SetControllerReference(shipyardInstance, shipyardSpecVersion, r.Scheme)
 			if err != nil {
-				r.ReqLogger.Error(err, "could not set controller reference:")
+				r.ReqLogger.Error(err, "could not set controller reference")
+				return reconcile.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
 			}
 			err = r.Client.Create(ctx, shipyardSpecVersion)
 			if err != nil {
 				r.ReqLogger.Error(err, "Could not create version configmap")
+				return reconcile.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
 			}
 		}
 		return ctrl.Result{Requeue: true}, nil
@@ -142,127 +137,54 @@ func (r *KeptnShipyardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
-	if !r.checkKeptnProjectExists(ctx, req, shipyardInstance.Spec.Project) {
+	projectExists, err := utils.CheckKeptnProjectExists(ctx, req, r.Client, r.KeptnAPI, r.KeptnAPIScheme, shipyardInstance.Spec.Project)
+	if err != nil {
+		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
+	}
+	if !projectExists {
 		r.Recorder.Event(shipyardInstance, "Warning", "KeptnProjectNotFound", fmt.Sprintf("Keptn project %s does not exist", shipyardInstance.Spec.Project))
 		shipyardInstance.Status.ProjectExists = false
 		err := r.Client.Status().Update(ctx, shipyardInstance)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of shipyard "+shipyardInstance.Spec.Project)
+			return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
 		}
-		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+		return ctrl.Result{Requeue: true}, nil
 	} else if shipyardInstance.Status.ProjectExists == false {
 		shipyardInstance.Status.ProjectExists = true
 		err := r.Client.Status().Update(ctx, shipyardInstance)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of shipyard "+shipyardInstance.Spec.Project)
+			return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	keptnShipyard := keptnv2.Shipyard{}
-	keptnShipyard.Kind = shipyardInstance.Kind
-	keptnShipyard.ApiVersion = shipyardAPIVersion
-	stages, err := r.transformStageSpecsToKeptnAPI(shipyardInstance, shipyardInstance.Spec.Stages)
-	if err != nil {
-		r.ReqLogger.Error(err, "Could not transform stages")
-		return reconcile.Result{RequeueAfter: 30 * time.Second, Requeue: true}, err
-	}
-	keptnShipyard.Spec.Stages = stages
+	keptnShipyard := shipyardInstance.Spec.Shipyard
 
 	shipyardString, err := yaml.Marshal(keptnShipyard)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not marshal shipyard")
-		return reconcile.Result{RequeueAfter: 30 * time.Second, Requeue: true}, err
-	}
-	// encodedShipyardString := base64.StdEncoding.EncodeToString(shipyardString)
-
-	newProject := apiv1.CreateProject{
-		Name:     &shipyardInstance.Spec.Project,
-		Shipyard: shipyardString,
+		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
 	}
 
-	err = r.updateShipyard(ctx, req.Namespace, shipyardInstance.Spec.Project, newProject)
+	err = r.updateShipyard(ctx, req.Namespace, shipyardInstance.Spec.Project, shipyardString)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not update shipyard")
-		return reconcile.Result{RequeueAfter: 30 * time.Second, Requeue: true}, err
+		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
 	}
 
 	shipyardSpecVersion.Data["Hash"] = specHash
 	err = r.Client.Update(ctx, shipyardSpecVersion)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not update status", "KeptnShipyard", shipyardInstance.Name)
+		return ctrl.Result{Requeue: true, RequeueAfter: ReconcileErrorInterval}, err
 	} else {
 		r.ReqLogger.Info("Updated status", "status", shipyardInstance.Status)
 	}
 
 	r.ReqLogger.Info("Finished Reconciling KeptnShipyard")
-	return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
-}
-
-func (r *KeptnShipyardReconciler) transformStageSpecsToKeptnAPI(instance *apiv1.KeptnShipyard, stages []apiv1.KeptnShipyardStage) ([]keptnv2.Stage, error) {
-	result := []keptnv2.Stage{}
-
-	allSequences := &apiv1.KeptnSequenceList{}
-	err := r.List(context.TODO(), allSequences)
-	if err != nil {
-		return nil, fmt.Errorf("could not load available sequnces: %w", err)
-	}
-
-	for _, stageRef := range stages {
-		stageInstance := &apiv1.KeptnStage{}
-		if err := r.Get(context.TODO(), types.NamespacedName{
-			Namespace: instance.Namespace,
-			Name:      stageRef.StageRef,
-		}, stageInstance); err != nil {
-			return nil, fmt.Errorf("could not load stage: %w", err)
-		}
-		newStage := keptnv2.Stage{Name: stageInstance.Name, Sequences: []keptnv2.Sequence{}}
-
-		// get the referenced sequences
-		for _, seq := range stageInstance.Spec.Sequence {
-			sequenceFound := false
-			for _, availableSequence := range allSequences.Items {
-				if availableSequence.Name == seq.SequenceRef {
-					sequenceFound = true
-
-					keptnv2Sequence := &keptnv2.Sequence{}
-					if err := keptnv2.Decode(availableSequence.Spec.Sequence, &keptnv2Sequence); err != nil {
-						return nil, fmt.Errorf("could not transform sequence: %w", err)
-					}
-					newStage.Sequences = append(newStage.Sequences, *keptnv2Sequence)
-					break
-				}
-			}
-			if !sequenceFound {
-				return nil, fmt.Errorf("could not find sequence %s", seq.SequenceRef)
-			}
-		}
-		result = append(result, newStage)
-	}
-
-	return result, nil
-}
-
-func (r *KeptnShipyardReconciler) fetchProject(err error, shipyardInstance *apiv1.KeptnShipyard, logger logr.Logger) (*keptnapi.Project, error) {
-	get, err := req.Get(fmt.Sprintf("%s/v1/project/%s", getKeptnAPIURL(), shipyardInstance.Spec.Project))
-	if err != nil {
-
-		return nil, fmt.Errorf("could not fetch projects from Keptn API: %w", err)
-	}
-
-	project := &keptnapi.Project{}
-	if err := get.ToJSON(project); err != nil {
-		return nil, fmt.Errorf("could not parse API response: %w", err)
-	}
-
-	return project, nil
-}
-
-func getKeptnAPIURL() interface{} {
-	if apiURL := os.Getenv("KEPTN_CONTROL_PLANE_API_URL"); apiURL != "" {
-		return apiURL
-	}
-	return defaultKeptnControlPlaneAPIURL
+	return ctrl.Result{RequeueAfter: ReconcileSuccessInterval}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -272,44 +194,22 @@ func (r *KeptnShipyardReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *KeptnShipyardReconciler) checkKeptnProjectExists(ctx context.Context, req ctrl.Request, project string) bool {
-
-	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, utils.GetKeptnToken(ctx, r.Client, r.ReqLogger, req.Namespace), "x-token", nil, r.KeptnAPIScheme)
-
-	projects, err := projectsHandler.GetAllProjects()
-	if err != nil {
-		r.ReqLogger.Error(err, "Failed getting projects")
-		return false
-	}
-
-	filteredProjects := utils.FilterProjects(projects, project)
-	if len(filteredProjects) == 0 {
-		if project != "" {
-			r.ReqLogger.Error(err, "No project "+project+"found")
-			return false
-		}
-		r.ReqLogger.Error(err, "No projects")
-		return false
-	}
-	return true
-}
-
-func (r *KeptnShipyardReconciler) updateShipyard(ctx context.Context, namespace string, project string, createProject apiv1.CreateProject) error {
+func (r *KeptnShipyardReconciler) updateShipyard(ctx context.Context, namespace string, project string, shipyard []byte) error {
 	upstreamDir, _ := ioutil.TempDir("", "upstream_tmp_dir")
 
-	upstreamRepo, err := getUpstreamCredentials(ctx, r.Client, project, namespace)
+	upstreamRepo, err := utils.GetUpstreamCredentials(ctx, r.Client, project, namespace)
 	if err != nil {
 		return err
 	}
 
-	gitrepo, _, err := upstreamRepo.CheckOutGitRepo(upstreamDir)
+	gitrepo, _, err := utils.CheckOutGitRepo(upstreamRepo, upstreamDir)
 	if err != nil {
 		return err
 	}
 
 	authentication := &githttp.BasicAuth{
-		Username: upstreamRepo.user,
-		Password: upstreamRepo.token,
+		Username: upstreamRepo.User,
+		Password: upstreamRepo.Token,
 	}
 
 	commitOptions := git.CommitOptions{
@@ -320,7 +220,7 @@ func (r *KeptnShipyardReconciler) updateShipyard(ctx context.Context, namespace 
 		},
 	}
 
-	err = ioutil.WriteFile(filepath.Join(upstreamDir, "shipyard.yaml"), createProject.Shipyard, 0444)
+	err = ioutil.WriteFile(filepath.Join(upstreamDir, "shipyard.yaml"), shipyard, 0444)
 	if err != nil {
 		return fmt.Errorf("could not write shipyard: %w", err)
 	}
@@ -331,7 +231,7 @@ func (r *KeptnShipyardReconciler) updateShipyard(ctx context.Context, namespace 
 	}
 
 	// go-git can't stage deleted files https://github.com/src-d/go-git/issues/1268
-	err = AddGit(w)
+	err = utils.AddGit(w)
 	if err != nil {
 		return fmt.Errorf("could not add files: %w", err)
 	}
@@ -350,73 +250,6 @@ func (r *KeptnShipyardReconciler) updateShipyard(ctx context.Context, namespace 
 	})
 	if err != nil {
 		return fmt.Errorf("could not push commit: %w", err)
-	}
-	return nil
-}
-
-func getUpstreamCredentials(ctx context.Context, client client.Client, project string, namespace string) (*gitRepositoryConfig, error) {
-	obj := &apiv1.KeptnProject{}
-	err := client.Get(ctx, types.NamespacedName{Name: project, Namespace: namespace}, obj)
-	if err != nil {
-		return &gitRepositoryConfig{}, err
-	}
-
-	return getGitCredentials(obj.Spec.Repository, obj.Spec.Username, obj.Spec.Password, obj.Spec.DefaultBranch)
-}
-
-func getGitCredentials(remoteURI, user, token string, branch string) (*gitRepositoryConfig, error) {
-	secret, err := utils.DecryptSecret(token)
-	if err != nil {
-		return nil, err
-	}
-
-	if branch == "" {
-		branch = "main"
-	}
-
-	return &gitRepositoryConfig{
-		remoteURI: remoteURI,
-		user:      user,
-		token:     secret,
-		branch:    branch,
-	}, nil
-}
-
-func (repositoryConfig *gitRepositoryConfig) CheckOutGitRepo(dir string) (*git.Repository, string, error) {
-	authentication := &githttp.BasicAuth{
-		Username: repositoryConfig.user,
-		Password: repositoryConfig.token,
-	}
-
-	cloneOptions := git.CloneOptions{
-		URL:           repositoryConfig.remoteURI,
-		Auth:          authentication,
-		SingleBranch:  true,
-		ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-	}
-
-	repo, err := git.PlainClone(dir, false, &cloneOptions)
-	if err != nil {
-		cloneOptions.ReferenceName = plumbing.ReferenceName("refs/heads/master")
-		repo, err = git.PlainClone(dir, false, &cloneOptions)
-		if err != nil {
-			return nil, "", fmt.Errorf("Could not checkout "+repositoryConfig.remoteURI+"/"+repositoryConfig.branch, err)
-		}
-	}
-
-	head, err := repo.Head()
-	if err != nil {
-		return nil, "", fmt.Errorf("Could not get hash of "+repositoryConfig.remoteURI+"/"+repositoryConfig.branch, err)
-	}
-	return repo, head.Hash().String(), nil
-}
-
-func AddGit(worktree *git.Worktree) error {
-	cmd := exec.Command("git", "add", ".")
-	cmd.Dir = worktree.Filesystem.Root()
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("Could not add files: %v", err)
 	}
 	return nil
 }
