@@ -147,7 +147,7 @@ func TestCompareHashStructure(t *testing.T) {
 			DefaultBranch: "my_branch",
 		},
 	}
-	testdata_fail := keptnv1.KeptnProject{
+	testdataFail := keptnv1.KeptnProject{
 		Spec: keptnv1.KeptnProjectSpec{
 			Repository:    "my_repositoryx",
 			Username:      "keptntesterx",
@@ -163,8 +163,8 @@ func TestCompareHashStructure(t *testing.T) {
 	})
 
 	t.Run("compare_structs_false", func(t *testing.T) {
-		if GetHashStructure(testdata) == GetHashStructure(testdata_fail) {
-			t.Errorf("GetHashStructure() = %v == %v", GetHashStructure(testdata), GetHashStructure(testdata_fail))
+		if GetHashStructure(testdata) == GetHashStructure(testdataFail) {
+			t.Errorf("GetHashStructure() = %v == %v", GetHashStructure(testdata), GetHashStructure(testdataFail))
 		}
 	})
 }

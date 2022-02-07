@@ -8,7 +8,7 @@ import (
 )
 
 func Test_composeKeptnStage(t *testing.T) {
-	teststage := keptnv1.KeptnStage{
+	testStage := keptnv1.KeptnStage{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "my_first_stage",
 		},
@@ -23,7 +23,7 @@ func Test_composeKeptnStage(t *testing.T) {
 		},
 	}
 
-	testsequencelist_correct := &keptnv1.KeptnSequenceList{
+	testSequenceListCorrect := &keptnv1.KeptnSequenceList{
 		Items: []keptnv1.KeptnSequence{
 			{
 				ObjectMeta: metav1.ObjectMeta{
@@ -46,7 +46,7 @@ func Test_composeKeptnStage(t *testing.T) {
 		},
 	}
 
-	testsequencelist_missing := &keptnv1.KeptnSequenceList{
+	testSequenceListMissing := &keptnv1.KeptnSequenceList{
 		Items: []keptnv1.KeptnSequence{
 			{
 				ObjectMeta: metav1.ObjectMeta{
@@ -69,7 +69,7 @@ func Test_composeKeptnStage(t *testing.T) {
 		},
 	}
 
-	testresult := keptnv1.Stage{
+	testResult := keptnv1.Stage{
 		Name: "my_first_stage",
 		Sequences: []keptnv1.Sequence{
 			{
@@ -98,19 +98,19 @@ func Test_composeKeptnStage(t *testing.T) {
 		{
 			name: "stage_correct",
 			args: args{
-				stage:     teststage,
-				sequences: testsequencelist_correct,
+				stage:     testStage,
+				sequences: testSequenceListCorrect,
 			},
-			want: testresult,
+			want: testResult,
 		},
 		{
 			name: "stage_missing_sequence",
 			args: args{
-				stage:     teststage,
-				sequences: testsequencelist_missing,
+				stage:     testStage,
+				sequences: testSequenceListMissing,
 			},
 			want: keptnv1.Stage{
-				Name: teststage.Name,
+				Name: testStage.Name,
 			},
 			wantErr: true,
 		},

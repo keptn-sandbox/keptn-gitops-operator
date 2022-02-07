@@ -44,13 +44,13 @@ func GetKeptnToken(ctx context.Context, client client.Client, namespace string) 
 }
 
 //CheckKeptnProjectExists queries the keptn api if a project exists
-func CheckKeptnProjectExists(ctx context.Context, req ctrl.Request, clt client.Client, apiUrl string, apiScheme string, project string) (bool, error) {
+func CheckKeptnProjectExists(ctx context.Context, req ctrl.Request, clt client.Client, apiURL string, apiScheme string, project string) (bool, error) {
 
 	token, err := GetKeptnToken(ctx, clt, req.Namespace)
 	if err != nil {
 
 	}
-	projectsHandler := apiutils.NewAuthenticatedProjectHandler(apiUrl, token, "x-token", nil, apiScheme)
+	projectsHandler := apiutils.NewAuthenticatedProjectHandler(apiURL, token, "x-token", nil, apiScheme)
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {

@@ -1,6 +1,7 @@
 package utils
 
-type gitRepositoryConfig struct {
+//GitRepositoryConfig defines the configuration which is used by git components
+type GitRepositoryConfig struct {
 	RemoteURI string
 	User      string
 	Token     string

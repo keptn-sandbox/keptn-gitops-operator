@@ -13,7 +13,7 @@ import (
 )
 
 //CheckOutGitRepo Checks out the git repo and returns the commit hash of it
-func CheckOutGitRepo(repositoryConfig *gitRepositoryConfig, dir string) (*git.Repository, string, error) {
+func CheckOutGitRepo(repositoryConfig *GitRepositoryConfig, dir string) (*git.Repository, string, error) {
 	authentication := &githttp.BasicAuth{
 		Username: repositoryConfig.User,
 		Password: repositoryConfig.Token,
@@ -43,18 +43,18 @@ func CheckOutGitRepo(repositoryConfig *gitRepositoryConfig, dir string) (*git.Re
 }
 
 //GetUpstreamCredentials gets the KeptnProject Resource for the Project and reads the git credentials
-func GetUpstreamCredentials(ctx context.Context, client client.Client, project string, namespace string) (*gitRepositoryConfig, error) {
+func GetUpstreamCredentials(ctx context.Context, client client.Client, project string, namespace string) (*GitRepositoryConfig, error) {
 	obj := &apiv1.KeptnProject{}
 	err := client.Get(ctx, types.NamespacedName{Name: project, Namespace: namespace}, obj)
 	if err != nil {
-		return &gitRepositoryConfig{}, err
+		return &GitRepositoryConfig{}, err
 	}
 
 	return GetGitCredentials(obj.Spec.Repository, obj.Spec.Username, obj.Spec.Password, obj.Spec.DefaultBranch)
 }
 
 //GetGitCredentials creates a unified struct for git credentials
-func GetGitCredentials(remoteURI, user, token string, branch string) (*gitRepositoryConfig, error) {
+func GetGitCredentials(remoteURI, user, token string, branch string) (*GitRepositoryConfig, error) {
 	secret, err := DecryptSecret(token)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func GetGitCredentials(remoteURI, user, token string, branch string) (*gitReposi
 		branch = "main"
 	}
 
-	return &gitRepositoryConfig{
+	return &GitRepositoryConfig{
 		RemoteURI: remoteURI,
 		User:      user,
 		Token:     secret,
