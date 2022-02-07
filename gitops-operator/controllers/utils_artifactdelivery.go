@@ -3,15 +3,15 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/go-git/go-git/v5"
 	gitopsv1 "github.com/keptn-sandbox/keptn-gitops-operator/gitops-operator/api/v1"
+	"github.com/keptn-sandbox/keptn-gitops-operator/gitops-operator/controllers/common"
+	"github.com/keptn-sandbox/keptn-gitops-operator/gitops-operator/controllers/common/types"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func getArtifactProject(dir string) (string, error) {
@@ -20,7 +20,7 @@ func getArtifactProject(dir string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("could not read file: %w", err)
 		}
-		metadataYaml := KeptnArtifactRootMetadata{}
+		metadataYaml := types.KeptnArtifactRootMetadata{}
 		err = yaml.Unmarshal(yamlFile, &metadataYaml)
 		if err != nil {
 			return "", fmt.Errorf("could not unmarshal file: %w", err)
@@ -31,14 +31,14 @@ func getArtifactProject(dir string) (string, error) {
 	}
 }
 
-func composeData(tmpFs afero.Fs, dir string, repo gitRepositoryConfig, gitrepo *git.Repository, services map[DirectoryData]KeptnArtifactMetadataSpec, stages []DirectoryData) error {
+func (r *KeptnGitRepositoryReconciler) composeData(gitClient common.GitClient, tmpFs afero.Fs, dir string, services map[types.DirectoryData]types.KeptnArtifactMetadataSpec, stages []types.DirectoryData) error {
 	serviceTagExists := false
 	// Copy the Base Directory
 
 	for service, metadata := range services {
 		tag := service.DirectoryName + "-" + metadata.Version
 
-		err := tagExists(tag, gitrepo)
+		err := gitClient.TagExists(tag)
 		if err != nil {
 			if err.Error() == "tag was found" && !metadata.OverwriteTag {
 				fmt.Println("Would not overwrite Tag")
@@ -76,7 +76,7 @@ func composeData(tmpFs afero.Fs, dir string, repo gitRepositoryConfig, gitrepo *
 				fmt.Println("No Data - Stage: "+stage.DirectoryName, "Service: "+service.DirectoryName)
 			}
 		}
-		err = CommitAndPushUpstream(repo, gitrepo, tag, serviceTagExists)
+		err = gitClient.CommitAndPushUpstream(tag, serviceTagExists)
 		if err != nil {
 			return fmt.Errorf("could not push to upstream: %w", err)
 		}
@@ -84,7 +84,7 @@ func composeData(tmpFs afero.Fs, dir string, repo gitRepositoryConfig, gitrepo *
 	return nil
 }
 
-func deliverArtifacts(ctx context.Context, req ctrl.Request, client client.Client, fs afero.Fs, keptnGitRepository *gitopsv1.KeptnGitRepository, codeRepoDir string) error {
+func (r *KeptnGitRepositoryReconciler) deliverArtifacts(ctx context.Context, req ctrl.Request, fs afero.Fs, keptnGitRepository *gitopsv1.KeptnGitRepository, codeRepoDir string) error {
 	upstreamDir, _ := ioutil.TempDir("", "upstream_tmp_dir")
 	artifactBaseRoot := filepath.Join(codeRepoDir, keptnGitRepository.Spec.BaseDir, "base")
 	artifactStageRoot := filepath.Join(codeRepoDir, keptnGitRepository.Spec.BaseDir, "stages")
@@ -93,7 +93,7 @@ func deliverArtifacts(ctx context.Context, req ctrl.Request, client client.Clien
 		return err
 	}
 	if artifactProject != "" {
-		upstreamRepo, err := getUpstreamCredentials(ctx, client, artifactProject, req.Namespace)
+		upstreamRepo, err := common.GetUpstreamCredentials(ctx, r.Client, artifactProject, req.Namespace)
 		if err != nil {
 			return err
 		}
@@ -108,12 +108,12 @@ func deliverArtifacts(ctx context.Context, req ctrl.Request, client client.Clien
 			return err
 		}
 
-		gitrepo, _, err := upstreamRepo.CheckOutGitRepo(upstreamDir)
+		upstreamGitClient, err := r.GitClientFactory.GetClient(*upstreamRepo, upstreamDir)
 		if err != nil {
 			return err
 		}
 
-		err = composeData(fs, upstreamDir, *upstreamRepo, gitrepo, serviceArtifacts, stages)
+		err = r.composeData(upstreamGitClient, fs, upstreamDir, serviceArtifacts, stages)
 		if err != nil {
 			return err
 		}

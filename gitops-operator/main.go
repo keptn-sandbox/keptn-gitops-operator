@@ -33,6 +33,7 @@ import (
 
 	gitopsv1 "github.com/keptn-sandbox/keptn-gitops-operator/gitops-operator/api/v1"
 	"github.com/keptn-sandbox/keptn-gitops-operator/gitops-operator/controllers"
+	"github.com/keptn-sandbox/keptn-gitops-operator/gitops-operator/controllers/common"
 	keptnv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
 	//+kubebuilder:scaffold:imports
 )
@@ -81,10 +82,11 @@ func main() {
 	}
 
 	if err = (&controllers.KeptnGitRepositoryReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("keptnproject-controller"),
-		Log:      ctrl.Log.WithName("controllers").WithName("KeptnGitRepository"),
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		Recorder:         mgr.GetEventRecorderFor("keptnproject-controller"),
+		Log:              ctrl.Log.WithName("controllers").WithName("KeptnGitRepository"),
+		GitClientFactory: &common.GoGitClientFactory{},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KeptnGitRepository")
 		os.Exit(1)
