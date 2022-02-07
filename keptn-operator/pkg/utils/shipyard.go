@@ -111,7 +111,6 @@ func getKeptnStages(ctx context.Context, clt client.Client, project string) ([]k
 	keptnStageList := &keptnv1.KeptnStageList{}
 	var stageList []keptnv1.KeptnStage
 
-	fmt.Println(project)
 	err := clt.List(ctx, keptnStageList)
 	if err != nil {
 		return stageList, fmt.Errorf("could not get stages for project: %w", err)
