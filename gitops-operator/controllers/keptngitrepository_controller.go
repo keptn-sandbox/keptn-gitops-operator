@@ -51,6 +51,7 @@ type KeptnManifests struct {
 	execution          []keptnv1.KeptnSequenceExecution
 	scheduledexec      []keptnv1.KeptnScheduledExec
 	servicedeployments []keptnv1.KeptnServiceDeployment
+	instances          []keptnv1.KeptnInstance
 }
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptngitrepositories,verbs=get;list;watch;create;update;patch;delete
@@ -119,6 +120,16 @@ func (r *KeptnGitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.R
 	if err != nil {
 		r.Log.Info("Could not parse manifests", "Repository", codeRepoConfig.RemoteURI, "Hash", codeRepoHash)
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
+	}
+
+	for _, instance := range manifests.instances {
+		err, created := r.checkCreateInstance(ctx, *keptnGitRepository, instance)
+		if err != nil {
+			r.Log.Error(err, "Failed to check or create instance")
+			return ctrl.Result{}, err
+		} else if created {
+			return ctrl.Result{Requeue: true}, nil
+		}
 	}
 
 	for _, sequence := range manifests.sequences {

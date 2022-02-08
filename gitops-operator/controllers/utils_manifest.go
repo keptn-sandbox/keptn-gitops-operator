@@ -75,6 +75,9 @@ func parseKeptnManifests(dir string, basedir string) (KeptnManifests, error) {
 			case *keptnv1.KeptnProject:
 				project := obj.(*keptnv1.KeptnProject)
 				config.projects = append(config.projects, *project)
+			case *keptnv1.KeptnInstance:
+				instance := obj.(*keptnv1.KeptnInstance)
+				config.instances = append(config.instances, *instance)
 			case *keptnv1.KeptnService:
 				service := obj.(*keptnv1.KeptnService)
 				config.services = append(config.services, *service)

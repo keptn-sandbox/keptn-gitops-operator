@@ -236,6 +236,9 @@ func (r *KeptnProjectReconciler) createProject(project *apiv1.KeptnProject) erro
 
 	err = utils.CheckResponseCode(response, nethttp.StatusOK)
 	if err != nil {
+		fmt.Println(request.Header)
+		fmt.Println(request.URL.String())
+		fmt.Println(string(data))
 		return fmt.Errorf("could not create project %v: %v", project.Name, err)
 	}
 	return err

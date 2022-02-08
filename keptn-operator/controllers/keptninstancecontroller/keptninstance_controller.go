@@ -102,12 +102,25 @@ func (r *KeptnInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			instance.Status.LastUpdated = metav1.Time{Time: time.Now()}
 			err = r.Client.Status().Update(ctx, instance)
 			if err != nil {
-				r.ReqLogger.Error(err, "Could not update status of ksd "+instance.Name)
+				r.ReqLogger.Error(err, "Could not update status of keptninstance "+instance.Name)
 				return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 			}
 			return ctrl.Result{Requeue: true}, err
 		}
 	case "x-token":
+		instance.Status.AuthHeader = "x-token"
+		instance.Status.CurrentToken = instance.Spec.Token
+
+		if instance.Spec.Token != instance.Status.CurrentToken || instance.Status.LastUpdated.Add(refreshInterval).Before(time.Now()) {
+			instance.Status.LastUpdated = metav1.Time{Time: time.Now()}
+			err = r.Client.Status().Update(ctx, instance)
+			if err != nil {
+				r.ReqLogger.Error(err, "Could not update status of keptninstance "+instance.Name)
+				return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
+			}
+			return ctrl.Result{Requeue: true}, err
+		}
+
 		return ctrl.Result{Requeue: true, RequeueAfter: 10 * time.Second}, err
 	}
 
