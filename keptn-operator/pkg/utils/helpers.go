@@ -34,7 +34,7 @@ func CheckResponseCode(response *nethttp.Response, expectedCode int) error {
 		if err != nil {
 			return fmt.Errorf("could not read response body: %v", err)
 		}
-		return fmt.Errorf("%v", responseBody)
+		return fmt.Errorf("%v", string(responseBody))
 	}
 	return nil
 }

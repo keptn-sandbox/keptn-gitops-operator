@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	nethttp "net/http"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"time"
 
@@ -47,15 +46,14 @@ type KeptnProjectReconciler struct {
 	Recorder record.EventRecorder
 	// ReqLogger contains the Logger of this controller
 	ReqLogger logr.Logger
-	// KeptnAPI contains the URL of the Keptn Control Plane API
-	KeptnAPI string
-	// KeptnAPIScheme contains the Scheme (http/https) of the Keptn Control Plane API
-	KeptnAPIScheme string
-	// KeptnAPIToken contains the Token for the Keptn Control Plane API
-	KeptnAPIToken string
+	// KeptnInstance contains the Information about the KeptnInstance of this controller
+	KeptnInstance apiv1.KeptnInstance
+	// KeptnToken contains the API token used in this controller
+	KeptnToken string
 }
 
-const reconcileRetryInterval = 10 * time.Second
+const reconcileErrorInterval = 10 * time.Second
+const reconcileSuccessInterval = 120 * time.Second
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnprojects,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnprojects/status,verbs=get;update;patch
@@ -74,23 +72,12 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	r.ReqLogger = ctrl.Log.WithValues("Request.Namespace", req.Namespace, "Request.Name", req.Name)
 	r.ReqLogger.Info("Reconciling Project")
 
-	var ok bool
-	r.KeptnAPI, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
-	if !ok {
-		r.ReqLogger.Info("KEPTN_API_ENDPOINT is not present, defaulting to api-gateway-nginx")
-		r.KeptnAPI = "http://api-gateway-nginx/api"
-	}
-
-	r.KeptnAPIScheme, ok = os.LookupEnv("KEPTN_API_SCHEME")
-	if r.KeptnAPIScheme == "" {
-		r.KeptnAPIScheme = "http"
-	}
-	token, err := utils.GetKeptnToken(ctx, r.Client, req.Namespace)
+	var err error
+	r.KeptnInstance, r.KeptnToken, err = utils.GetKeptnInstance(ctx, r.Client, req.Namespace)
 	if err != nil {
-		r.ReqLogger.Error(err, "Could not get Keptn Token")
-		return ctrl.Result{Requeue: true}, nil
+		r.ReqLogger.Error(err, "Could not get Keptn Instance")
+		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, nil
 	}
-	r.KeptnAPIToken = token
 
 	keptnproject := &apiv1.KeptnProject{}
 
@@ -138,20 +125,20 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
-	projectExists, err := utils.CheckKeptnProjectExists(ctx, req, r.Client, r.KeptnAPI, r.KeptnAPIScheme, keptnproject.Name)
+	projectExists, err := utils.CheckKeptnProjectExists(ctx, req, r.Client, keptnproject.Name)
 	if !projectExists {
 		err := r.createProject(keptnproject)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not create project")
-			return ctrl.Result{RequeueAfter: reconcileRetryInterval}, err
+			return ctrl.Result{RequeueAfter: reconcileErrorInterval}, err
 		}
-		return ctrl.Result{RequeueAfter: reconcileRetryInterval}, nil
+		return ctrl.Result{RequeueAfter: reconcileErrorInterval}, nil
 	}
 
 	shipyard, err := utils.CreateShipyard(ctx, r.Client, keptnproject.Name)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not create shipyard")
-		return ctrl.Result{RequeueAfter: reconcileRetryInterval}, err
+		return ctrl.Result{RequeueAfter: reconcileErrorInterval}, err
 	}
 
 	shipyardPresent, shipyardHash := utils.CheckKeptnShipyard(ctx, req, r.Client, keptnproject.Name)
@@ -167,19 +154,19 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		err = r.Client.Create(ctx, &shipyard)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not create shipyard")
-			return ctrl.Result{RequeueAfter: reconcileRetryInterval}, err
+			return ctrl.Result{RequeueAfter: reconcileErrorInterval}, err
 		}
-		return ctrl.Result{RequeueAfter: reconcileRetryInterval, Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: reconcileErrorInterval, Requeue: true}, nil
 	}
 
 	err = utils.UpdateShipyard(ctx, r.Client, shipyard, shipyardHash, req.Namespace)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not update shipyard")
-		return ctrl.Result{RequeueAfter: reconcileRetryInterval}, nil
+		return ctrl.Result{RequeueAfter: reconcileErrorInterval}, nil
 	}
 
 	r.ReqLogger.Info("Finished Reconciling KeptnProject")
-	return ctrl.Result{RequeueAfter: reconcileRetryInterval}, nil
+	return ctrl.Result{RequeueAfter: reconcileSuccessInterval}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -197,13 +184,13 @@ func (r *KeptnProjectReconciler) deleteKeptnProject(keptnproject *apiv1.KeptnPro
 		Timeout: 30 * time.Second,
 	}
 
-	request, err := nethttp.NewRequest("DELETE", r.KeptnAPI+"/controlPlane/v1/project/"+keptnproject.Name, bytes.NewBuffer(nil))
+	request, err := nethttp.NewRequest("DELETE", r.KeptnInstance.Spec.APIUrl+"/controlPlane/v1/project/"+keptnproject.Name, bytes.NewBuffer(nil))
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not delete Project "+keptnproject.Name)
 	}
 
 	request.Header.Set("content-type", "application/json")
-	request.Header.Set("x-token", r.KeptnAPIToken)
+	request.Header.Set(r.KeptnInstance.Status.AuthHeader, r.KeptnToken)
 
 	r.ReqLogger.Info("Deleting Keptn Project " + keptnproject.Name)
 	_, err = httpclient.Do(request)
@@ -232,14 +219,14 @@ func (r *KeptnProjectReconciler) createProject(project *apiv1.KeptnProject) erro
 		"name":         project.Name,
 	})
 
-	request, err := nethttp.NewRequest("POST", r.KeptnAPI+"/controlPlane/v1/project", bytes.NewBuffer(data))
+	request, err := nethttp.NewRequest("POST", r.KeptnInstance.Spec.APIUrl+"/controlPlane/v1/project", bytes.NewBuffer(data))
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not create project "+project.Name)
 		return err
 	}
 
 	request.Header.Set("content-type", "application/json")
-	request.Header.Set("x-token", r.KeptnAPIToken)
+	request.Header.Set(r.KeptnInstance.Status.AuthHeader, r.KeptnToken)
 
 	r.ReqLogger.Info("Creating Keptn Project " + project.Name)
 	response, err := httpclient.Do(request)

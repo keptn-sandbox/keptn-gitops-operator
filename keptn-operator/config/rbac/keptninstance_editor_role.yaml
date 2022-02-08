@@ -1,0 +1,24 @@
+# permissions for end users to edit keptninstances.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keptninstance-editor-role
+rules:
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptninstances
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptninstances/status
+  verbs:
+  - get

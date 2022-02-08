@@ -9,4 +9,5 @@ resources:
 - _v1_keptnscheduledexec.yaml
 - _v1_keptnservicedeployment.yaml
 - _v1_keptndeploymentcontext.yaml
+- _v1_keptninstance.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

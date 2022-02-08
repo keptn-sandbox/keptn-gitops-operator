@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	keptnv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
 	"github.com/keptn/go-utils/pkg/api/models"
 	apiutils "github.com/keptn/go-utils/pkg/api/utils"
 	corev1 "k8s.io/api/core/v1"
@@ -33,8 +34,8 @@ func FilterServices(services []*models.Service, serviceName string) []*models.Se
 	return filteredServices
 }
 
-// GetKeptnToken returns the Keptn API Token in a Namespace
-func GetKeptnToken(ctx context.Context, client client.Client, namespace string) (string, error) {
+// GetKeptnCPToken returns the Keptn API Token in a Namespace
+func GetKeptnCPToken(ctx context.Context, client client.Client, namespace string) (string, error) {
 	keptnToken := &corev1.Secret{}
 	err := client.Get(ctx, types.NamespacedName{Name: "keptn-api-token", Namespace: namespace}, keptnToken)
 	if err != nil {
@@ -43,14 +44,30 @@ func GetKeptnToken(ctx context.Context, client client.Client, namespace string) 
 	return string(keptnToken.Data["keptn-api-token"]), nil
 }
 
-//CheckKeptnProjectExists queries the keptn api if a project exists
-func CheckKeptnProjectExists(ctx context.Context, req ctrl.Request, clt client.Client, apiURL string, apiScheme string, project string) (bool, error) {
+// GetKeptnInstance returns the Keptn CP Instance Information in a Namespace
+func GetKeptnInstance(ctx context.Context, client client.Client, namespace string) (keptnv1.KeptnInstance, string, error) {
+	keptnInstance := keptnv1.KeptnInstance{}
+	err := client.Get(ctx, types.NamespacedName{Name: "default", Namespace: namespace}, &keptnInstance)
+	if err != nil {
+		return keptnv1.KeptnInstance{}, "", fmt.Errorf("could not fetch keptn instance: %w", err)
+	}
 
-	token, err := GetKeptnToken(ctx, clt, req.Namespace)
+	token, err := DecryptSecret(keptnInstance.Status.CurrentToken)
+	if err != nil {
+		return keptnv1.KeptnInstance{}, "", err
+	}
+
+	return keptnInstance, token, nil
+}
+
+//CheckKeptnProjectExists queries the keptn api if a project exists
+func CheckKeptnProjectExists(ctx context.Context, req ctrl.Request, clt client.Client, project string) (bool, error) {
+
+	instance, token, err := GetKeptnInstance(ctx, clt, req.Namespace)
 	if err != nil {
 
 	}
-	projectsHandler := apiutils.NewAuthenticatedProjectHandler(apiURL, token, "x-token", nil, apiScheme)
+	projectsHandler := apiutils.NewAuthenticatedProjectHandler(instance.Spec.APIUrl, token, instance.Status.AuthHeader, nil, instance.Status.Scheme)
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {

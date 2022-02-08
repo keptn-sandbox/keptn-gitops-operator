@@ -34,7 +34,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"os"
 	"path/filepath"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -54,10 +53,10 @@ type KeptnShipyardReconciler struct {
 	Recorder record.EventRecorder
 	// ReqLogger contains the Logger of this controller
 	ReqLogger logr.Logger
-	// KeptnAPI contains the URL of the Keptn Control Plane API
-	KeptnAPI string
-	// KeptnAPIScheme contains the Scheme (http/https) of the Keptn Control Plane API
-	KeptnAPIScheme string
+	// KeptnInstance contains the Information about the KeptnInstance of this controller
+	KeptnInstance apiv1.KeptnInstance
+	// KeptnAPIToken contains the API token used in this controller
+	KeptnAPIToken string
 }
 
 const reconcileErrorInterval = 10 * time.Second
@@ -83,20 +82,15 @@ func (r *KeptnShipyardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	r.ReqLogger = ctrl.Log.WithValues("Request.Namespace", req.Namespace, "Request.Name", req.Name)
 	r.ReqLogger.Info("Reconciling KeptnShipyard")
 
-	var ok bool
-	r.KeptnAPI, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
-	if !ok {
-		r.ReqLogger.Info("KEPTN_API_ENDPOINT is not present, defaulting to api-gateway-nginx")
-		r.KeptnAPI = "http://api-gateway-nginx/api"
+	var err error
+	r.KeptnInstance, r.KeptnAPIToken, err = utils.GetKeptnInstance(ctx, r.Client, req.Namespace)
+	if err != nil {
+		r.ReqLogger.Error(err, "Could not get Keptn Instance")
+		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 	}
 
-	if r.KeptnAPIScheme == "" {
-		r.KeptnAPIScheme = "http"
-	}
-
-	// your logic here
 	shipyardInstance := &apiv1.KeptnShipyard{}
-	err := r.Get(ctx, req.NamespacedName, shipyardInstance)
+	err = r.Get(ctx, req.NamespacedName, shipyardInstance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -137,7 +131,7 @@ func (r *KeptnShipyardReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
-	projectExists, err := utils.CheckKeptnProjectExists(ctx, req, r.Client, r.KeptnAPI, r.KeptnAPIScheme, shipyardInstance.Spec.Project)
+	projectExists, err := utils.CheckKeptnProjectExists(ctx, req, r.Client, shipyardInstance.Spec.Project)
 	if err != nil {
 		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 	}

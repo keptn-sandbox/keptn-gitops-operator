@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	keptnv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
 	"io"
 	nethttp "net/http"
@@ -96,7 +95,6 @@ func TestCheckResponseCode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := CheckResponseCode(tt.args.response, tt.args.expectedCode); (err != nil) != tt.wantErr {
-				fmt.Println(err)
 				t.Errorf("CheckResponseCode() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

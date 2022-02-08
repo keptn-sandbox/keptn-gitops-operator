@@ -1,0 +1,20 @@
+# permissions for end users to view keptninstances.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keptninstance-viewer-role
+rules:
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptninstances
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptninstances/status
+  verbs:
+  - get

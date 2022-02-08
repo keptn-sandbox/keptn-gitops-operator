@@ -18,13 +18,11 @@ package keptnscheduledexeccontroller
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
@@ -42,10 +40,6 @@ type KeptnScheduledExecReconciler struct {
 	Recorder record.EventRecorder
 	// ReqLogger contains the Logger of this controller
 	ReqLogger logr.Logger
-	// KeptnAPI contains the URL of the Keptn Control Plane API
-	KeptnAPI string
-	// KeptnAPIScheme contains the Scheme (http/https) of the Keptn Control Plane API
-	KeptnAPIScheme string
 }
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnscheduledexecs,verbs=get;list;watch;create;update;patch;delete
@@ -64,17 +58,6 @@ type KeptnScheduledExecReconciler struct {
 func (r *KeptnScheduledExecReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.ReqLogger = ctrl.Log.WithValues("Request.Namespace", req.Namespace, "Request.Name", req.Name)
 	r.ReqLogger.Info("Reconciling KeptnScheduledExec")
-
-	var ok bool
-	r.KeptnAPI, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
-	if !ok {
-		r.ReqLogger.Info("KEPTN_API_ENDPOINT is not present, defaulting to api-gateway-nginx")
-		r.KeptnAPI = "http://api-gateway-nginx/api"
-	}
-
-	if r.KeptnAPIScheme == "" {
-		r.KeptnAPIScheme = "http"
-	}
 
 	keptnexec := &apiv1.KeptnScheduledExec{}
 
@@ -97,13 +80,12 @@ func (r *KeptnScheduledExecReconciler) Reconcile(ctx context.Context, req ctrl.R
 		keptnexec.Status.Started = false
 		err = r.Client.Status().Update(ctx, keptnexec)
 		if err != nil {
-			fmt.Println(err)
+			return ctrl.Result{Requeue: true, RequeueAfter: 10 * time.Second}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
 	}
 
 	if scheduledTime.Before(time.Now()) && keptnexec.Status.Started == false {
-		fmt.Println("Would trigger execution")
 		seq := apiv1.KeptnSequenceExecution{
 			ObjectMeta: v1.ObjectMeta{
 				GenerateName: "scheduledexecution-",
@@ -114,13 +96,13 @@ func (r *KeptnScheduledExecReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 		err := r.Client.Create(ctx, &seq)
 		if err != nil {
-			fmt.Println(err)
+			return ctrl.Result{Requeue: true, RequeueAfter: 10 * time.Second}, err
 		}
 
 		keptnexec.Status.Started = true
 		err = r.Client.Status().Update(ctx, keptnexec)
 		if err != nil {
-			fmt.Println(err)
+			return ctrl.Result{Requeue: true, RequeueAfter: 10 * time.Second}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
 	}

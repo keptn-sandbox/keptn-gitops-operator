@@ -78,8 +78,6 @@ func composeShipyard(ctx context.Context, clt client.Client, project string) (ke
 			return keptnShipyard, err
 		}
 		keptnShipyard.Spec.Stages = append(keptnShipyard.Spec.Stages, stage)
-		fmt.Println(keptnShipyard.Spec.Stages)
-
 	}
 	return keptnShipyard, nil
 }

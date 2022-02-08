@@ -30,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	nethttp "net/http"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
@@ -48,10 +47,10 @@ type KeptnSequenceExecutionReconciler struct {
 	Recorder record.EventRecorder
 	// ReqLogger contains the Logger of this controller
 	ReqLogger logr.Logger
-	// KeptnAPI contains the URL of the Keptn Control Plane API
-	KeptnAPI string
-	// KeptnAPIScheme contains the Scheme (http/https) of the Keptn Control Plane API
-	KeptnAPIScheme string
+	// KeptnInstance contains the Information about the KeptnInstance of this controller
+	KeptnInstance apiv1.KeptnInstance
+	// KeptnAPIToken contains the API token used in this controller
+	KeptnAPIToken string
 }
 
 // KeptnTriggerEvent describes a Keptn Event which should be triggered
@@ -83,6 +82,9 @@ type CreateEventResponse struct {
 	KeptnContext string `json:"keptnContext"`
 }
 
+const reconcileErrorInterval = 10 * time.Second
+const reconcileSuccessInterval = 120 * time.Second
+
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnsequenceexecutions,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnsequenceexecutions/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnsequenceexecutions/finalizers,verbs=update
@@ -100,15 +102,11 @@ func (r *KeptnSequenceExecutionReconciler) Reconcile(ctx context.Context, req ct
 	r.ReqLogger = ctrl.Log.WithValues("Request.Namespace", req.Namespace, "Request.Name", req.Name)
 	r.ReqLogger.Info("Reconciling KeptnSequenceExecution")
 
-	var ok bool
-	r.KeptnAPI, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
-	if !ok {
-		r.ReqLogger.Info("KEPTN_API_ENDPOINT is not present, defaulting to api-gateway-nginx")
-		r.KeptnAPI = "http://api-gateway-nginx/api"
-	}
-
-	if r.KeptnAPIScheme == "" {
-		r.KeptnAPIScheme = "http"
+	var err error
+	r.KeptnInstance, r.KeptnAPIToken, err = utils.GetKeptnInstance(ctx, r.Client, req.Namespace)
+	if err != nil {
+		r.ReqLogger.Error(err, "Could not get Keptn Instance")
+		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, nil
 	}
 
 	kse := &apiv1.KeptnSequenceExecution{}
@@ -141,11 +139,11 @@ func (r *KeptnSequenceExecutionReconciler) Reconcile(ctx context.Context, req ct
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if !r.checkIfServiceExists(ctx, req, kse.Spec.Project, kse.Spec.Service) {
+	exists, err := r.checkIfServiceExists(kse.Spec.Project, kse.Spec.Service)
+	if !exists {
 		r.Recorder.Event(kse, "Warning", "KeptnServiceNotFound", fmt.Sprintf("Keptn service %s in project %s does not exist", kse.Spec.Service, kse.Spec.Project))
 		kse.Status.ServiceExists = false
 		kse.Status.UpdatePending = true
-		fmt.Println(kse.Status.ServiceExists)
 		err := r.Client.Status().Update(ctx, kse)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of kse "+kse.Name)
@@ -161,7 +159,7 @@ func (r *KeptnSequenceExecutionReconciler) Reconcile(ctx context.Context, req ct
 	}
 
 	if kse.Status.KeptnContext == "" || kse.Status.LastAppliedHash != utils.GetHashStructure(kse.Spec) || kse.Status.UpdatePending {
-		kcontext, err := r.triggerTask(ctx, kse, req.Namespace)
+		kcontext, err := r.triggerTask(kse)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not trigger task")
 			return ctrl.Result{Requeue: true}, err
@@ -176,7 +174,7 @@ func (r *KeptnSequenceExecutionReconciler) Reconcile(ctx context.Context, req ct
 	}
 
 	r.ReqLogger.Info("Finished Reconciling KeptnSequenceExecution")
-	return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	return ctrl.Result{RequeueAfter: reconcileSuccessInterval}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -197,52 +195,43 @@ func (r *KeptnSequenceExecutionReconciler) checkKeptnProject(ctx context.Context
 	return true
 }
 
-func (r *KeptnSequenceExecutionReconciler) checkIfServiceExists(ctx context.Context, req ctrl.Request, project string, service string) bool {
-	token, err := utils.GetKeptnToken(ctx, r.Client, req.Namespace)
-	if err != nil {
-		r.ReqLogger.Error(err, "Could not get Keptn Token for "+project)
-	}
+func (r *KeptnSequenceExecutionReconciler) checkIfServiceExists(project string, service string) (bool, error) {
 
-	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, token, "x-token", nil, r.KeptnAPIScheme)
-	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.KeptnAPI, token, "x-token", nil, r.KeptnAPIScheme)
+	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnInstance.Spec.APIUrl, r.KeptnAPIToken, r.KeptnInstance.Status.AuthHeader, nil, r.KeptnInstance.Status.Scheme)
+	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.KeptnInstance.Spec.APIUrl, r.KeptnAPIToken, r.KeptnInstance.Status.AuthHeader, nil, r.KeptnInstance.Status.Scheme)
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {
-		fmt.Println(err)
-		return false
+		return false, err
 	}
 
 	filteredProjects := utils.FilterProjects(projects, project)
 	if len(filteredProjects) == 0 {
 		if project != "" {
 			fmt.Printf("No project %s found\n", project)
-			fmt.Println(err)
-			return false
+			return false, err
 		}
-		fmt.Println("No projects found")
-		fmt.Println(err)
-		return false
+		return false, fmt.Errorf("no projects found")
 	}
 
 	for _, proj := range filteredProjects {
-		fmt.Println(proj.ProjectName)
 		for _, stage := range proj.Stages {
 			services, err := servicesHandler.GetAllServices(proj.ProjectName, stage.StageName)
 			if err != nil {
-				return false
+				return false, err
 			}
 			filteredServices := utils.FilterServices(services, service)
 			if len(filteredServices) == 0 {
 				fmt.Printf("No services %s found in project %s", service, project)
-				return false
+				return false, err
 			}
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, err
 }
 
-func (r *KeptnSequenceExecutionReconciler) triggerTask(ctx context.Context, exec *apiv1.KeptnSequenceExecution, namespace string) (string, error) {
+func (r *KeptnSequenceExecutionReconciler) triggerTask(exec *apiv1.KeptnSequenceExecution) (string, error) {
 
 	httpclient := nethttp.Client{
 		Timeout: 30 * time.Second,
@@ -271,20 +260,15 @@ func (r *KeptnSequenceExecutionReconciler) triggerTask(ctx context.Context, exec
 		r.ReqLogger.Info("Could not marshal Keptn Trigger Event")
 	}
 
-	token, err := utils.GetKeptnToken(ctx, r.Client, namespace)
-	if err != nil {
-		r.ReqLogger.Error(err, "Could not get Keptn Token for "+exec.Spec.Project)
-	}
-
 	r.ReqLogger.Info("Triggering Event " + exec.Spec.Event + " for service " + exec.Spec.Service)
-	request, err := nethttp.NewRequest("POST", r.KeptnAPI+"/v1/event", bytes.NewBuffer(data))
+	request, err := nethttp.NewRequest("POST", r.KeptnInstance.Spec.APIUrl+"/v1/event", bytes.NewBuffer(data))
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not trigger event "+exec.Spec.Event+" for service "+exec.Spec.Service)
 		return "", err
 	}
 
 	request.Header.Set("content-type", "application/cloudevents+json")
-	request.Header.Set("x-token", token)
+	request.Header.Set(r.KeptnInstance.Status.AuthHeader, r.KeptnAPIToken)
 
 	response, err := httpclient.Do(request)
 	if err != nil {

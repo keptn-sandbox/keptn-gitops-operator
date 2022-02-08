@@ -18,7 +18,6 @@ package keptnstagecontroller
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-logr/logr"
 	apiv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
@@ -41,10 +40,10 @@ type KeptnStageReconciler struct {
 	Recorder record.EventRecorder
 	// ReqLogger contains the Logger of this controller
 	ReqLogger logr.Logger
-	// KeptnAPI contains the URL of the Keptn Control Plane API
-	KeptnAPI string
-	// KeptnAPIScheme contains the Scheme (http/https) of the Keptn Control Plane API
-	KeptnAPIScheme string
+	// KeptnInstance contains the Information about the KeptnInstance of this controller
+	KeptnInstance apiv1.KeptnInstance
+	// KeptnToken contains the API token used in this controller
+	KeptnAPIToken string
 }
 
 const reconcileErrorInterval = 10 * time.Second
@@ -81,7 +80,6 @@ func (r *KeptnStageReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	shipyard, err := utils.CreateShipyard(ctx, r.Client, keptnstage.Spec.Project)
 	if err != nil {
-		fmt.Println(err)
 		r.ReqLogger.Error(err, "Could not create shipyard")
 		return ctrl.Result{RequeueAfter: reconcileErrorInterval}, err
 	}

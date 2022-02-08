@@ -17,6 +17,32 @@ rules:
 - apiGroups:
   - keptn.sh
   resources:
+  - keptninstances
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptninstances/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptninstances/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
   - keptnprojects
   verbs:
   - create

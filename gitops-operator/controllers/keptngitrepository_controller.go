@@ -153,7 +153,7 @@ func (r *KeptnGitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 	err = r.deliverArtifacts(ctx, req, fs, keptnGitRepository, codeRepoDir)
 	if err != nil {
-		r.Log.Error(err, "could not deliver artifacts: %w", err)
+		r.Log.Error(err, "could not deliver artifacts")
 	}
 
 	for _, service := range manifests.services {

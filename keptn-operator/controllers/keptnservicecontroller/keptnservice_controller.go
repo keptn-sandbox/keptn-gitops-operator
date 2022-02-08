@@ -28,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	nethttp "net/http"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"time"
@@ -48,11 +47,9 @@ type KeptnServiceReconciler struct {
 	Recorder record.EventRecorder
 	// ReqLogger contains the Logger of this controller
 	ReqLogger logr.Logger
-	// KeptnAPI contains the URL of the Keptn Control Plane API
-	KeptnAPI string
-	// KeptnAPIScheme contains the Scheme (http/https) of the Keptn Control Plane API
-	KeptnAPIScheme string
-	// KeptnAPIToken contains the Token for the Keptn Control Plane API
+	// KeptnInstance contains the Information about the KeptnInstance of this controller
+	KeptnInstance apiv1.KeptnInstance
+	// KeptnAPIToken contains the API token used in this controller
 	KeptnAPIToken string
 }
 
@@ -76,23 +73,12 @@ func (r *KeptnServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	r.ReqLogger = ctrl.Log.WithValues("Request.Namespace", req.Namespace, "Request.Name", req.Name)
 	r.ReqLogger.Info("Reconciling KeptnService")
 
-	var ok bool
-	r.KeptnAPI, ok = os.LookupEnv("KEPTN_API_ENDPOINT")
-	if !ok {
-		r.ReqLogger.Info("KEPTN_API_ENDPOINT is not present, defaulting to api-gateway-nginx")
-		r.KeptnAPI = "http://api-gateway-nginx/api"
-	}
-
-	if r.KeptnAPIScheme == "" {
-		r.KeptnAPIScheme = "http"
-	}
-
-	token, err := utils.GetKeptnToken(ctx, r.Client, req.Namespace)
+	var err error
+	r.KeptnInstance, r.KeptnAPIToken, err = utils.GetKeptnInstance(ctx, r.Client, req.Namespace)
 	if err != nil {
-		r.ReqLogger.Error(err, "Could not get Keptn Token")
+		r.ReqLogger.Error(err, "Could not get Keptn Instance")
 		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, nil
 	}
-	r.KeptnAPIToken = token
 
 	keptnservice := &apiv1.KeptnService{}
 
@@ -160,7 +146,8 @@ func (r *KeptnServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if !r.checkIfServiceExists(keptnservice.Spec.Project, keptnservice.Spec.Service) {
+	exists, err := r.checkIfServiceExists(keptnservice.Spec.Project, keptnservice.Spec.Service)
+	if !exists {
 		err := r.createService(keptnservice.Spec.Service, keptnservice.Spec.Project)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not create service "+keptnservice.Spec.Service)
@@ -197,13 +184,13 @@ func (r *KeptnServiceReconciler) deleteKeptnService(keptnservice *apiv1.KeptnSer
 		Timeout: 30 * time.Second,
 	}
 
-	request, err := nethttp.NewRequest("DELETE", r.KeptnAPI+"/controlPlane/v1/project/"+keptnservice.Spec.Project+"/service/"+keptnservice.Spec.Service, bytes.NewBuffer(nil))
+	request, err := nethttp.NewRequest("DELETE", r.KeptnInstance.Spec.APIUrl+"/controlPlane/v1/project/"+keptnservice.Spec.Project+"/service/"+keptnservice.Spec.Service, bytes.NewBuffer(nil))
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not delete service "+keptnservice.Name)
 	}
 
 	request.Header.Set("content-type", "application/json")
-	request.Header.Set("x-token", r.KeptnAPIToken)
+	request.Header.Set(r.KeptnInstance.Status.AuthHeader, r.KeptnAPIToken)
 
 	r.ReqLogger.Info("Deleting Keptn Service " + keptnservice.Name)
 	_, err = httpclient.Do(request)
@@ -222,14 +209,14 @@ func (r *KeptnServiceReconciler) createService(service string, project string) e
 		"serviceName": service,
 	})
 
-	request, err := nethttp.NewRequest("POST", r.KeptnAPI+"/controlPlane/v1/project/"+project+"/service", bytes.NewBuffer(data))
+	request, err := nethttp.NewRequest("POST", r.KeptnInstance.Spec.APIUrl+"/controlPlane/v1/project/"+project+"/service", bytes.NewBuffer(data))
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not create service "+service)
 		return err
 	}
 
 	request.Header.Set("content-type", "application/json")
-	request.Header.Set("x-token", r.KeptnAPIToken)
+	request.Header.Set(r.KeptnInstance.Status.AuthHeader, r.KeptnAPIToken)
 
 	r.ReqLogger.Info("Creating Keptn Service " + service)
 	response, err := httpclient.Do(request)
@@ -244,44 +231,36 @@ func (r *KeptnServiceReconciler) createService(service string, project string) e
 	return err
 }
 
-func (r *KeptnServiceReconciler) checkIfServiceExists(project string, service string) bool {
+func (r *KeptnServiceReconciler) checkIfServiceExists(project string, service string) (bool, error) {
 
-	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnAPI, r.KeptnAPIToken, "x-token", nil, r.KeptnAPIScheme)
-	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.KeptnAPI, r.KeptnAPIToken, "x-token", nil, r.KeptnAPIScheme)
+	projectsHandler := apiutils.NewAuthenticatedProjectHandler(r.KeptnInstance.Spec.APIUrl, r.KeptnAPIToken, r.KeptnInstance.Status.AuthHeader, nil, r.KeptnInstance.Status.Scheme)
+	servicesHandler := apiutils.NewAuthenticatedServiceHandler(r.KeptnInstance.Spec.APIUrl, r.KeptnAPIToken, r.KeptnInstance.Status.AuthHeader, nil, r.KeptnInstance.Status.Scheme)
 
 	projects, err := projectsHandler.GetAllProjects()
 	if err != nil {
-		fmt.Println(err)
-		return false
+		return false, err
 	}
 
 	filteredProjects := utils.FilterProjects(projects, project)
 	if len(filteredProjects) == 0 {
 		if project != "" {
-			fmt.Printf("No project %s found\n", project)
-			fmt.Println(err)
-			return false
+			return false, fmt.Errorf("no project %s found: %w", project, err)
 		}
-		fmt.Println("No projects found")
-		fmt.Println(err)
-		return false
+		return false, fmt.Errorf("no projects found")
 	}
-
-	fmt.Println(filteredProjects)
 
 	for _, proj := range filteredProjects {
 		for _, stage := range proj.Stages {
 			services, err := servicesHandler.GetAllServices(proj.ProjectName, stage.StageName)
 			if err != nil {
-				return false
+				return false, err
 			}
 			filteredServices := utils.FilterServices(services, service)
 			if len(filteredServices) == 0 {
-				fmt.Printf("No services %s found in project %s", service, project)
-				return false
+				return false, fmt.Errorf("no services %s found in project %s", service, project)
 			}
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, err
 }
