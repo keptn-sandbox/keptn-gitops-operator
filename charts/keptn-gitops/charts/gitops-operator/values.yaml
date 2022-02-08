@@ -1,3 +1,2 @@
 image: latest
 secret_encryption_private_key: ""
-keptn_api_endpoint: "http://api-gateway-nginx/api"
