@@ -206,8 +206,8 @@ jobs:
     - name: Build Custom Resources Charts
       id: build_crd
       working-directory: ${{ matrix.service }}
-      run: ./gh-actions-scripts/generate_crds.sh ${{ matrix.service }}
-      
+      run: ../gh-actions-scripts/generate_crds.sh ${{ matrix.service }}
+
     - name: Upload CRD as an artifact
       id: upload_crd
       uses: actions/upload-artifact@v2
