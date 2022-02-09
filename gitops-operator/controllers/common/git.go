@@ -12,10 +12,12 @@ import (
 	"time"
 )
 
+//GitClientFactory ...
 type GitClientFactory interface {
 	GetClient(repositoryConfig internaltypes.GitRepositoryConfig, dir string) (GitClient, error)
 }
 
+//GitClient ...
 type GitClient interface {
 	Checkout(config internaltypes.GitRepositoryConfig, directory string) error
 	GetLastCommitHash() (string, error)
