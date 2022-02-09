@@ -208,8 +208,7 @@ func (r *KeptnSequenceExecutionReconciler) checkIfServiceExists(project string, 
 	filteredProjects := utils.FilterProjects(projects, project)
 	if len(filteredProjects) == 0 {
 		if project != "" {
-			fmt.Printf("No project %s found\n", project)
-			return false, err
+			return false, fmt.Errorf("no project %s found", project)
 		}
 		return false, fmt.Errorf("no projects found")
 	}
@@ -222,13 +221,12 @@ func (r *KeptnSequenceExecutionReconciler) checkIfServiceExists(project string, 
 			}
 			filteredServices := utils.FilterServices(services, service)
 			if len(filteredServices) == 0 {
-				fmt.Printf("No services %s found in project %s", service, project)
-				return false, err
+				return false, fmt.Errorf("no services %s found in project %s", service, project)
 			}
 			return true, nil
 		}
 	}
-	return false, err
+	return false, nil
 }
 
 func (r *KeptnSequenceExecutionReconciler) triggerTask(exec *apiv1.KeptnSequenceExecution) (string, error) {
