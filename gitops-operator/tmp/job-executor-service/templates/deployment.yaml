@@ -1,0 +1,178 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "job-executor-service.fullname" . }}
+  labels:
+    {{- include "job-executor-service.labels" . | nindent 4 }}
+
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "job-executor-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }} # forces pod restart (e.g., when updating helm values)
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "job-executor-service.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "job-executor-service.serviceAccountName" . }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: job-executor-service
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+          {{- if .Values.remoteControlPlane.enabled }}
+          - name: INIT_CONTAINER_CONFIGURATION_SERVICE_API_ENDPOINT
+            value: "{{ .Values.remoteControlPlane.api.protocol }}://{{ .Values.remoteControlPlane.api.hostname }}/api/configuration-service"
+          - name: KEPTN_API_TOKEN
+            value: "{{ .Values.remoteControlPlane.api.token }}"
+          {{- else }}
+          - name: INIT_CONTAINER_CONFIGURATION_SERVICE_API_ENDPOINT
+            value: "http://configuration-service:8080"
+          {{- end }}
+          - name: CONFIGURATION_SERVICE
+            value: "http://localhost:8081/configuration-service"
+          - name: env
+            value: 'production'
+          - name: JOB_NAMESPACE
+            valueFrom:
+              configMapKeyRef:
+                name: job-service-config
+                key: job_namespace
+          - name: INIT_CONTAINER_IMAGE
+            valueFrom:
+              configMapKeyRef:
+                name: job-service-config
+                key: init_container_image
+          - name: DEFAULT_RESOURCE_LIMITS_CPU
+            valueFrom:
+              configMapKeyRef:
+                name: job-service-config
+                key: default_resource_limits_cpu
+          - name: DEFAULT_RESOURCE_LIMITS_MEMORY
+            valueFrom:
+              configMapKeyRef:
+                name: job-service-config
+                key: default_resource_limits_memory
+          - name: DEFAULT_RESOURCE_REQUESTS_CPU
+            valueFrom:
+              configMapKeyRef:
+                name: job-service-config
+                key: default_resource_requests_cpu
+          - name: DEFAULT_RESOURCE_REQUESTS_MEMORY
+            valueFrom:
+              configMapKeyRef:
+                name: job-service-config
+                key: default_resource_requests_memory
+          - name: ALWAYS_SEND_FINISHED_EVENT
+            valueFrom:
+              configMapKeyRef:
+                name: job-service-config
+                key: always_send_finished_event
+          - name: ENABLE_KUBERNETES_API_ACCESS
+            valueFrom:
+              configMapKeyRef:
+                name: job-service-config
+                key: enable_kubernetes_api_access
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 10999
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        - name: distributor
+          image: "{{ .Values.distributor.image.repository }}:{{ .Values.distributor.image.tag | default .Chart.AppVersion }}"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 10999
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: "16Mi"
+              cpu: "25m"
+            limits:
+              memory: "32Mi"
+              cpu: "100m"
+          env:
+            # Note: in the case of remote execution plane we need to specify a list of CloudEvent types
+            {{- if .Values.remoteControlPlane.enabled }}
+            - name: PUBSUB_TOPIC
+              value: "{{ .Values.remoteControlPlane.topicSubscription }}"
+            {{- else }}
+            # Note: In case of "normal" setup (within the same Kuberntes cluster as Keptn control-plane) it is enough to subscribe to sh.keptn.>
+            - name: PUBSUB_TOPIC
+              value: "sh.keptn.>" # all CloudEvent types
+            {{- end }}
+            - name: PUBSUB_RECIPIENT
+              value: '127.0.0.1'
+            - name: STAGE_FILTER
+              value: "{{ .Values.distributor.stageFilter }}"
+            - name: PROJECT_FILTER
+              value: "{{ .Values.distributor.projectFilter }}"
+            - name: SERVICE_FILTER
+              value: "{{ .Values.distributor.serviceFilter }}"
+            - name: VERSION
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/version']
+            - name: K8S_DEPLOYMENT_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/name']
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            {{- if .Values.remoteControlPlane.enabled }}
+            - name: KEPTN_API_ENDPOINT
+              value: "{{ .Values.remoteControlPlane.api.protocol }}://{{ .Values.remoteControlPlane.api.hostname }}/api"
+            - name: KEPTN_API_TOKEN
+              value: "{{ .Values.remoteControlPlane.api.token }}"
+            - name: HTTP_SSL_VERIFY
+              value: "{{ .Values.remoteControlPlane.api.apiValidateTls | default "true" }}"
+            {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

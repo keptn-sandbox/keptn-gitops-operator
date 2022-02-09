@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: job-service-config
+data:
+  job_namespace: "{{ .Release.Namespace }}"
+  init_container_image: "{{ .Values.jobexecutorserviceinitcontainer.image.repository }}:{{ .Values.jobexecutorserviceinitcontainer.image.tag | default .Chart.AppVersion }}"
+  default_resource_limits_cpu: "1"
+  default_resource_limits_memory: "512Mi"
+  default_resource_requests_cpu: "50m"
+  default_resource_requests_memory: "128Mi"
+  always_send_finished_event: "false"
+  enable_kubernetes_api_access: "{{ .Values.jobConfig.enableKubernetesApiAccess | default false }}"

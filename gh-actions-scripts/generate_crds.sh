@@ -8,6 +8,8 @@ if [ -z "$SERVICE" ]; then
 fi
 
 make manifests
+make tmp
 mkdir crds/
 
-cat config/crd/bases/* > crds/${SERVICE}_crd.yaml
+sed -i
+cat config/crd/bases/* > tmp/${SERVICE}_crd.yaml
