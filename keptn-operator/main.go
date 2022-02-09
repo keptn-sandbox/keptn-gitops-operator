@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptninstancecontroller"
 	"os"
 
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnprojectcontroller"
@@ -149,6 +150,13 @@ func main() {
 		Recorder: mgr.GetEventRecorderFor("keptnservicedeployment-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KeptnServiceDeployment")
+		os.Exit(1)
+	}
+	if err = (&keptninstancecontroller.KeptnInstanceReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "KeptnInstance")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

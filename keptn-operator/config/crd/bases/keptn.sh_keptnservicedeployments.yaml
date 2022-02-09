@@ -68,6 +68,8 @@ spec:
               lastAppliedHash:
                 type: string
               prerequisites:
+                description: KeptnServiceDeploymentPrerequisites defines all of the
+                  objects needed to deploy a service
                 properties:
                   projectExists:
                     type: boolean
@@ -77,6 +79,8 @@ spec:
                     type: boolean
                 type: object
               progress:
+                description: KeptnServiceDeploymentProgress describes the state of
+                  the deployment progress
                 properties:
                   artifactAvailable:
                     type: boolean

@@ -40,23 +40,97 @@ spec:
                 description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
                   Important: Run "make" to regenerate code after modifying this file'
                 type: string
-              stages:
-                description: Stages define the stages included in this shipyard
-                items:
-                  description: KeptnShipyardStage contains the reference to the KeptnStage
-                    object
-                  properties:
-                    stageRef:
-                      description: StageRef contains the reference to the KeptnStage
-                        object
-                      type: string
-                  required:
-                  - stageRef
-                  type: object
-                type: array
+              shipyard:
+                description: Shipyard describes a shipyard specification according
+                  to Keptn spec 0.2.0
+                properties:
+                  apiVersion:
+                    type: string
+                  kind:
+                    type: string
+                  metadata:
+                    description: Metadata contains meta-data of a resource
+                    properties:
+                      name:
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  spec:
+                    description: ShipyardSpec consists of any number of stages
+                    properties:
+                      stages:
+                        items:
+                          description: Stage defines a stage by its name and list
+                            of task sequences
+                          properties:
+                            name:
+                              type: string
+                            sequences:
+                              items:
+                                description: Sequence defines a task sequence by its
+                                  name and tasks. The triggers property is optional
+                                properties:
+                                  name:
+                                    type: string
+                                  tasks:
+                                    items:
+                                      description: Task defines a task by its name
+                                        and optional properties
+                                      properties:
+                                        name:
+                                          type: string
+                                        properties:
+                                          additionalProperties:
+                                            type: string
+                                          type: object
+                                        triggeredAfter:
+                                          type: string
+                                      required:
+                                      - name
+                                      type: object
+                                    type: array
+                                  triggeredOn:
+                                    items:
+                                      description: Trigger defines a trigger which
+                                        causes a sequence to get activated
+                                      properties:
+                                        event:
+                                          type: string
+                                        selector:
+                                          description: Selector defines criteria for
+                                            a sequence to get triggered
+                                          properties:
+                                            match:
+                                              additionalProperties:
+                                                type: string
+                                              type: object
+                                          type: object
+                                      required:
+                                      - event
+                                      type: object
+                                    type: array
+                                required:
+                                - name
+                                - tasks
+                                type: object
+                              type: array
+                          required:
+                          - name
+                          type: object
+                        type: array
+                    required:
+                    - stages
+                    type: object
+                required:
+                - apiVersion
+                - kind
+                - metadata
+                - spec
+                type: object
             required:
             - project
-            - stages
+            - shipyard
             type: object
           status:
             description: KeptnShipyardStatus defines the observed state of KeptnShipyard

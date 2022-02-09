@@ -1,0 +1,84 @@
+name: 'Docker Build Push'
+description: 'Docker build and Push'
+inputs:
+  TAGS:
+    description: "List of images/tags to be pushed, e.g., keptncontrib/my-service:1.2.3"
+    required: true
+  BUILD_ARGS:
+    default: ''
+    description: "List of build arguments"
+    required: false
+  REGISTRY_USER:
+    description: "DockerHub User used for pushing to docker.io - leave empty if you don't want to push to docker.io"
+    required: false
+    default: ''
+  REGISTRY_PASSWORD:
+    description: "DockerHub token or password used for pushing to docker.io - leave empty if you don't want to push to docker.io"
+    required: false
+    default: ''
+  GITHUB_TOKEN:
+    description: "Github Access token used for pushing to ghcr.io - leave empty if you don't want to push to ghcr.io"
+    required: false
+    default: ''
+  DOCKERFILE:
+    description: "Dockerfile to be used in docker build"
+    required: true
+    default: 'Dockerfile'
+  TARGET:
+    description: "Target to be built using docker build"
+    required: false
+    default: ''
+  CONTEXT:
+    description: "Target to be built using docker build"
+    required: false
+    default: '.'
+  PULL:
+    description: "Whether or not to pull the image before building (i.e., to make use of cached layers)"
+    required: false
+    default: 'false'
+  PUSH:
+    description: "Whether or not to push the image to the desired registry"
+    required: false
+    default: 'true'
+outputs:
+  BUILD_METADATA:
+    description: Docker Build metadata
+    value: ${{ steps.docker_build_image.outputs.metadata }}
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v1
+      if: ${{ inputs.REGISTRY_USER != '' }}
+      with:
+        username: ${{ inputs.REGISTRY_USER }}
+        password: ${{ inputs.REGISTRY_PASSWORD }}
+
+    - name: Login to GitHub Container Registry
+      if: ${{ inputs.GITHUB_TOKEN != '' }}
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.GITHUB_TOKEN }}
+
+    - name: Load CI Environment from .ci_env
+      id: load_ci_env
+      uses: c-py/action-dotenv-to-setenv@v3
+      with:
+        env-file: .ci_env
+
+    - id: docker_build_image
+      name: "Docker Build"
+      uses: docker/build-push-action@v2
+      with:
+        file: ${{ inputs.DOCKERFILE }}
+        context: ${{ inputs.CONTEXT }}
+        tags: ${{ inputs.TAGS }}
+        build-args: ${{ inputs.BUILD_ARGS }}
+        push: ${{ inputs.PUSH }}
+        pull: ${{ inputs.PULL }}
+        target: ${{ inputs.TARGET }}

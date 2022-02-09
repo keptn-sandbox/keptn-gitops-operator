@@ -20,6 +20,7 @@ import (
 	"context"
 	"github.com/go-logr/logr"
 	gitopsv1 "github.com/keptn-sandbox/keptn-gitops-operator/gitops-operator/api/v1"
+	"github.com/keptn-sandbox/keptn-gitops-operator/gitops-operator/controllers/common"
 	keptnv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
 	"github.com/spf13/afero"
 	"io/ioutil"
@@ -38,7 +39,8 @@ type KeptnGitRepositoryReconciler struct {
 	Scheme *runtime.Scheme
 	Log    logr.Logger
 	// Recorder contains the Recorder of this controller
-	Recorder record.EventRecorder
+	Recorder         record.EventRecorder
+	GitClientFactory common.GitClientFactory
 }
 
 type KeptnManifests struct {
@@ -49,6 +51,7 @@ type KeptnManifests struct {
 	execution          []keptnv1.KeptnSequenceExecution
 	scheduledexec      []keptnv1.KeptnScheduledExec
 	servicedeployments []keptnv1.KeptnServiceDeployment
+	instances          []keptnv1.KeptnInstance
 }
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptngitrepositories,verbs=get;list;watch;create;update;patch;delete
@@ -90,27 +93,43 @@ func (r *KeptnGitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.R
 	fs := afero.NewOsFs()
 	codeRepoDir, _ := ioutil.TempDir("", "code_tmp_dir")
 
-	codeRepoConfig, err := getGitCredentials(keptnGitRepository.Spec.Repository, keptnGitRepository.Spec.Username, keptnGitRepository.Spec.Token, keptnGitRepository.Spec.Branch)
+	codeRepoConfig, err := common.GetGitCredentials(keptnGitRepository.Spec.Repository, keptnGitRepository.Spec.Username, keptnGitRepository.Spec.Token, keptnGitRepository.Spec.Branch)
 	if err != nil {
 		r.Log.Error(err, "Could not decode code repo credentials", "URI", keptnGitRepository.Spec.Repository)
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
-	_, codeRepoHash, err := codeRepoConfig.CheckOutGitRepo(codeRepoDir)
+	sourceGitClient, err := r.GitClientFactory.GetClient(*codeRepoConfig, codeRepoDir)
 	if err != nil {
-		r.Log.Error(err, "Could not checkout code repository", "URI", keptnGitRepository.Spec.Repository)
+		r.Log.Error(err, "Could not initialize source git client", "URI", keptnGitRepository.Spec.Repository)
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
+	}
+	codeRepoHash, err := sourceGitClient.GetLastCommitHash()
+	if err != nil {
+		r.Log.Error(err, "Could not determine latest commit hash", "URI", keptnGitRepository.Spec.Repository)
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
 	if codeRepoHash == keptnGitRepository.Status.LastCommit {
-		r.Log.Info("Repository has not changed", "Repository", codeRepoConfig.remoteURI, "Hash", codeRepoHash)
+		r.Log.Info("Repository has not changed", "Repository", codeRepoConfig.RemoteURI, "Hash", codeRepoHash)
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
 	}
 
+	// TODO abstract file system read operations with an interface
 	manifests, err := parseKeptnManifests(codeRepoDir, keptnGitRepository.Spec.BaseDir)
 	if err != nil {
-		r.Log.Info("Could not parse manifests", "Repository", codeRepoConfig.remoteURI, "Hash", codeRepoHash)
+		r.Log.Info("Could not parse manifests", "Repository", codeRepoConfig.RemoteURI, "Hash", codeRepoHash)
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, err
+	}
+
+	for _, instance := range manifests.instances {
+		created, err := r.checkCreateInstance(ctx, *keptnGitRepository, instance)
+		if err != nil {
+			r.Log.Error(err, "Failed to check or create instance")
+			return ctrl.Result{}, err
+		} else if created {
+			return ctrl.Result{Requeue: true}, nil
+		}
 	}
 
 	for _, sequence := range manifests.sequences {
@@ -143,9 +162,9 @@ func (r *KeptnGitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.R
 		}
 	}
 
-	err = deliverArtifacts(ctx, req, r.Client, fs, keptnGitRepository, codeRepoDir)
+	err = r.deliverArtifacts(ctx, req, fs, keptnGitRepository, codeRepoDir)
 	if err != nil {
-		r.Log.Error(err, "could not deliver artifacts: %w", err)
+		r.Log.Error(err, "could not deliver artifacts")
 	}
 
 	for _, service := range manifests.services {

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/keptn-sandbox/keptn-gitops-operator/gitops-operator/controllers/common/types"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -155,7 +156,7 @@ func RemoveDir(fs afero.Fs, dir string) (err error) {
 	return
 }
 
-func cleanupServiceDirs(fs afero.Fs, servicename string, directory string, stages []DirectoryData) error {
+func cleanupServiceDirs(fs afero.Fs, servicename string, directory string, stages []types.DirectoryData) error {
 	err := fs.RemoveAll(filepath.Join(directory, "base", servicename))
 	if err != nil {
 		return fmt.Errorf("could not remove directory: %w", err)
@@ -170,8 +171,8 @@ func cleanupServiceDirs(fs afero.Fs, servicename string, directory string, stage
 	return nil
 }
 
-func findServiceDirs(fs afero.Fs, basedir string, filePattern string) (map[DirectoryData]KeptnArtifactMetadataSpec, error) {
-	metadata := map[DirectoryData]KeptnArtifactMetadataSpec{}
+func findServiceDirs(fs afero.Fs, basedir string, filePattern string) (map[types.DirectoryData]types.KeptnArtifactMetadataSpec, error) {
+	metadata := map[types.DirectoryData]types.KeptnArtifactMetadataSpec{}
 	dirs, err := afero.ReadDir(fs, basedir)
 	if err != nil {
 		return nil, fmt.Errorf("could not read directories: %w", err)
@@ -186,20 +187,20 @@ func findServiceDirs(fs afero.Fs, basedir string, filePattern string) (map[Direc
 				if err != nil {
 					return nil, fmt.Errorf("could not read file: %w", err)
 				}
-				metadataYaml := KeptnArtifactMetadata{}
+				metadataYaml := types.KeptnArtifactMetadata{}
 				err = yaml.Unmarshal(yamlFile, &metadataYaml)
 				if err != nil {
 					return nil, fmt.Errorf("could not unmarshal file: %w", err)
 				}
-				metadata[DirectoryData{DirectoryName: dir.Name(), Path: filepath.Join(basedir, dir.Name())}] = metadataYaml.Spec
+				metadata[types.DirectoryData{DirectoryName: dir.Name(), Path: filepath.Join(basedir, dir.Name())}] = metadataYaml.Spec
 			}
 		}
 	}
 	return metadata, nil
 }
 
-func findDirs(fs afero.Fs, basedir string) ([]DirectoryData, error) {
-	var directories []DirectoryData
+func findDirs(fs afero.Fs, basedir string) ([]types.DirectoryData, error) {
+	var directories []types.DirectoryData
 	dirs, err := afero.ReadDir(fs, basedir)
 	if err != nil {
 		return nil, fmt.Errorf("could not read directories: %w", err)
@@ -207,7 +208,7 @@ func findDirs(fs afero.Fs, basedir string) ([]DirectoryData, error) {
 
 	for _, dir := range dirs {
 		if dir.IsDir() {
-			directories = append(directories, DirectoryData{DirectoryName: dir.Name(), Path: filepath.Join(basedir, dir.Name())})
+			directories = append(directories, types.DirectoryData{DirectoryName: dir.Name(), Path: filepath.Join(basedir, dir.Name())})
 		}
 	}
 	return directories, nil

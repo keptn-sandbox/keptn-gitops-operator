@@ -34,7 +34,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2.4.0
         with:
           fetch-depth: 0 # need to checkout "all commits" for certain features to work (e.g., get all changed files)
 
@@ -95,59 +95,21 @@ jobs:
           echo "::set-output name=DATETIME::$(date +'%Y%m%d')$(date +'%H%M')"
 
   ############################################################################
-  # Unit tests                                                               #
-  ############################################################################
-  unit-tests:
-    name: Unit Tests
-    needs: prepare_ci_run
-    runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        service: ["keptn-operator","gitops-operator","promotion-service"]
-    steps:
-      - name: Set up Go 1.x
-        uses: actions/setup-go@v2
-        with:
-          go-version: ^1.16.2
-      - name: Checkout Code
-        uses: actions/checkout@v2
-
-      - name: Load CI Environment from .ci_env
-        id: load_ci_env
-        uses: c-py/action-dotenv-to-setenv@v3
-        with:
-          env-file: .ci_env
-
-      - name: Run Unit Tests
-        run: go test -coverprofile=coverage.txt -covermode=atomic -v ./...
-        working-directory: ${{ matrix.service }}/.
-
-
-  ############################################################################
   # Build Docker Image                                                      #
   ############################################################################
   docker_build:
-    needs: [prepare_ci_run, unit-tests]
-    name: Docker Build
-    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        service: ["keptn-operator","gitops-operator","promotion-service"]
+        service: ["keptn-operator", "gitops-operator", "promotion-service"]
+    needs: [prepare_ci_run]
+    name: Docker Build
+    runs-on: ubuntu-20.04
     env:
-      BRANCH: ${{ needs.prepare_ci_run.outputs.BRANCH }}
       VERSION: ${{ needs.prepare_ci_run.outputs.VERSION }}
-      DATETIME: ${{ needs.prepare_ci_run.outputs.DATE }}${{ needs.prepare_ci_run.outputs.TIME }}
-      GIT_SHA: ${{ needs.prepare_ci_run.outputs.GIT_SHA }}
-      TRIVY_IGNORE_UNFIXED: true
-      TRIVY_VULN_TYPE: 'os,library'
-      TRIVY_SEVERITY: 'CRITICAL,HIGH'
-
+      DATETIME: ${{ needs.prepare_ci_run.outputs.DATETIME }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: actions/checkout@v2.4.0
 
       - name: Load CI Environment from .ci_env
         id: load_ci_env
@@ -155,51 +117,105 @@ jobs:
         with:
           env-file: .ci_env
 
-      - id: docker_login
-        name: Docker Login
-        # only run docker login on pushes; also for PRs, but only if this is not a fork
-        if: (github.event_name == 'push') || (github.event.pull_request.head.repo.full_name == github.repository)
-        # note: GH does not allow to access secrets for PRs from a forked repositories due to security reasons
-        # that's fine, but it means we can't push images to dockerhub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.REGISTRY_USER }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - name: Copy files for gitops operator
+        id: copy_files_gitops
+        if: ${{ matrix.service }} == 'gitops-operator'
+        run: cp -r keptn-operator gitops-operator/
 
-      - name: Build
+      - name: Docker Build
         id: docker_build
-        uses: docker/build-push-action@v2
+        uses: ./.github/actions/docker-build
         with:
-          context: ${{ matrix.service }}/.
-          file: ${{ matrix.service }}/docker/Dockerfile
-          platforms: linux/amd64
-          tags: |
-            ${{ env.DOCKER_ORGANIZATION }}/${{ matrix.service }}:${{ env.VERSION }}-test
-          load: true
+          TAGS: |
+            ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}
+            ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}.${{ env.DATETIME }}
+          BUILD_ARGS: |
+            version=${{ env.VERSION }}
+          CONTEXT: ${{ matrix.service }}
+          DOCKERFILE: ${{ matrix.service }}/docker/Dockerfile
+          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          PUSH: ${{(github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository)}}
+
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "${{ env.DOCKER_ORGANIZATION }}/${{ matrix.service }}:${{ env.VERSION }}-test"
-          ignore-unfixed: '${{ env.TRIVY_IGNORE_UNFIXED }}'
-          vuln-type: '${{ env.TRIVY_VULN_TYPE }}'
-          severity: '${{ env.TRIVY_SEVERITY }}'
+          image-ref: ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results.sarif'
+          exit-code: 1
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: 'trivy-results.sarif'
 
-      - name: Build and Push
-        id: docker_build_push
-        uses: docker/build-push-action@v2
+      - id: report_docker_build_to_pr
+        name: Report Docker Build to PR
+        if: (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+        uses: marocchino/sticky-pull-request-comment@v2
         with:
-          context: ${{ matrix.service }}/.
-          push: true
-          file: ${{ matrix.service }}/docker/Dockerfile
-          platforms: linux/amd64
-          tags: |
-            ${{ env.DOCKER_ORGANIZATION }}/${{ matrix.service }}:${{ env.VERSION }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          recreate: true
+          header: test
+          message: |
+            The following Docker Images have been built:
+            * ${{ fromJSON(steps.docker_build.outputs.BUILD_METADATA)['image.name'] }}
+
+  helm_chart_build:
+    needs: [prepare_ci_run]
+    name: Build Helm Charts
+    runs-on: ubuntu-20.04
+    env:
+      VERSION: ${{ needs.prepare_ci_run.outputs.VERSION }}
+      DATETIME: ${{ needs.prepare_ci_run.outputs.DATETIME }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2.4.0
+
+      - name: Load CI Environment from .ci_env
+        id: load_ci_env
+        uses: c-py/action-dotenv-to-setenv@v3
+        with:
+          env-file: .ci_env
+
+      - name: Build Helm Charts
+        id: build_helm_charts
+        run: ./gh-actions-scripts/build_helm_chart.sh "${VERSION}" "${VERSION}.${DATETIME}" keptn-gitops ./charts/keptn-gitops
+
+      - name: Upload Helm Chart as an artifact
+        id: upload_helm_chart
+        uses: actions/upload-artifact@v2
+        with:
+          name: helm-charts
+          path: installer/*.tgz
+
+  custom_resource_build:
+    name: Build Custom Resource Definitions
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        service: [ "keptn-operator", "gitops-operator"]
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2.4.0
+
+    - name: Load CI Environment from .ci_env
+      id: load_ci_env
+      uses: c-py/action-dotenv-to-setenv@v3
+      with:
+        env-file: .ci_env
+
+    - name: Build Custom Resources Charts
+      id: build_crd
+      working-directory: ${{ matrix.service }}
+      run: ../gh-actions-scripts/generate_crds.sh ${{ matrix.service }}
+
+    - name: Upload CRD as an artifact
+      id: upload_crd
+      uses: actions/upload-artifact@v2
+      with:
+        name: crd_${{ matrix.service }}
+        path: ${{ matrix.service }}/crds/*.yaml

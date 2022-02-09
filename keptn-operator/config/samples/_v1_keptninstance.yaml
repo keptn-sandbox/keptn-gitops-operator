@@ -1,0 +1,6 @@
+apiVersion: keptn.sh/v1
+kind: KeptnInstance
+metadata:
+  name: keptninstance-sample
+spec:
+  # Add fields here

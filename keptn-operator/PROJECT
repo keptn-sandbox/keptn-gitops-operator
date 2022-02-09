@@ -78,4 +78,12 @@ resources:
   kind: KeptnDeploymentContext
   path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
   version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: keptn.sh
+  kind: KeptnInstance
+  path: github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1
+  version: v1
 version: "3"

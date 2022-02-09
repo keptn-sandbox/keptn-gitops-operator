@@ -2,7 +2,7 @@ promotionservice:
   image:
     repository: docker.io/keptnsandbox/promotion-service # Container Image Name
     pullPolicy: Always                   # Kubernetes Image Pull Policy
-    tag: "dev"                                    # Container Tag
+    tag: ""                                    # Container Tag
   service:
     enabled: true                              # Creates a Kubernetes Service for the promotion-service
 

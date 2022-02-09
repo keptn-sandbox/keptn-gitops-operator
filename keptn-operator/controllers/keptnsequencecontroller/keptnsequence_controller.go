@@ -39,10 +39,6 @@ type KeptnSequenceReconciler struct {
 	Recorder record.EventRecorder
 	// ReqLogger contains the Logger of this controller
 	ReqLogger logr.Logger
-	// KeptnAPI contains the URL of the Keptn Control Plane API
-	KeptnAPI string
-	// KeptnAPIScheme contains the Scheme (http/https) of the Keptn Control Plane API
-	KeptnAPIScheme string
 }
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnsequences,verbs=get;list;watch;create;update;patch;delete

@@ -24,13 +24,17 @@ func GetHashStructure(i interface{}) string {
 	return strconv.FormatUint(hash, 10)
 }
 
+//CheckResponseCode checks if the response code meets an expected one
 func CheckResponseCode(response *nethttp.Response, expectedCode int) error {
 	if response.StatusCode != expectedCode {
+		if response.Body == nil {
+			return fmt.Errorf("could not read response body")
+		}
 		responseBody, err := ioutil.ReadAll(response.Body)
 		if err != nil {
 			return fmt.Errorf("could not read response body: %v", err)
 		}
-		return fmt.Errorf("%v", responseBody)
+		return fmt.Errorf("%v", string(responseBody))
 	}
 	return nil
 }

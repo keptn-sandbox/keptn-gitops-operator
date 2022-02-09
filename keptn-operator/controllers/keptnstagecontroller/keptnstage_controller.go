@@ -19,14 +19,15 @@ package keptnstagecontroller
 import (
 	"context"
 	"github.com/go-logr/logr"
-	keptnshv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
+	apiv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // KeptnStageReconciler reconciles a KeptnStage object
@@ -39,11 +40,14 @@ type KeptnStageReconciler struct {
 	Recorder record.EventRecorder
 	// ReqLogger contains the Logger of this controller
 	ReqLogger logr.Logger
-	// KeptnAPI contains the URL of the Keptn Control Plane API
-	KeptnAPI string
-	// KeptnAPIScheme contains the Scheme (http/https) of the Keptn Control Plane API
-	KeptnAPIScheme string
+	// KeptnInstance contains the Information about the KeptnInstance of this controller
+	KeptnInstance apiv1.KeptnInstance
+	// KeptnToken contains the API token used in this controller
+	KeptnAPIToken string
 }
+
+const reconcileErrorInterval = 10 * time.Second
+const reconcileSuccessInterval = 120 * time.Second
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnstages,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnstages/status,verbs=get;update;patch
@@ -59,18 +63,45 @@ type KeptnStageReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
 func (r *KeptnStageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx)
-	logger.Info("Reconciling KeptnStage")
+	r.ReqLogger = ctrl.Log.WithValues("Request.Namespace", req.Namespace, "Request.Name", req.Name)
+	r.ReqLogger.Info("Reconciling KeptnStage")
 
-	// your logic here
+	keptnstage := &apiv1.KeptnStage{}
 
-	logger.Info("Finished Reconciling KeptnStage")
-	return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	if err := r.Client.Get(ctx, req.NamespacedName, keptnstage); err != nil {
+		if errors.IsNotFound(err) {
+			// taking down all associated K8s resources is handled by K8s
+			r.ReqLogger.Info("KeptnStage resource not found. Ignoring since object must be deleted")
+			return ctrl.Result{Requeue: true}, nil
+		}
+		r.ReqLogger.Error(err, "Failed to get the KeptnProject")
+		return ctrl.Result{}, err
+	}
+
+	shipyard, err := utils.CreateShipyard(ctx, r.Client, keptnstage.Spec.Project)
+	if err != nil {
+		r.ReqLogger.Error(err, "Could not create shipyard")
+		return ctrl.Result{RequeueAfter: reconcileErrorInterval}, err
+	}
+
+	shipyardPresent, shipyardHash := utils.CheckKeptnShipyard(ctx, req, r.Client, keptnstage.Spec.Project)
+	if !shipyardPresent {
+		return ctrl.Result{RequeueAfter: reconcileErrorInterval, Requeue: true}, nil
+	}
+
+	err = utils.UpdateShipyard(ctx, r.Client, shipyard, shipyardHash, req.Namespace)
+	if err != nil {
+		r.ReqLogger.Error(err, "Could not update shipyard")
+		return ctrl.Result{RequeueAfter: reconcileErrorInterval, Requeue: true}, nil
+	}
+
+	r.ReqLogger.Info("Finished Reconciling KeptnStage")
+	return ctrl.Result{RequeueAfter: reconcileSuccessInterval}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *KeptnStageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&keptnshv1.KeptnStage{}).
+		For(&apiv1.KeptnStage{}).
 		Complete(r)
 }
