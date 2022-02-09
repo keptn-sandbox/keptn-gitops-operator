@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+//AddGit adds changes to a git repositoray
 func AddGit(worktree *git.Worktree) error {
 	cmd := exec.Command("git", "add", ".")
 	cmd.Dir = worktree.Filesystem.Root()
@@ -21,6 +22,7 @@ func AddGit(worktree *git.Worktree) error {
 	return nil
 }
 
+//GetUpstreamCredentials fetches the credentials for the Kpetn upstream from a KeptnProject CRD
 func GetUpstreamCredentials(ctx context.Context, client client.Client, project string, namespace string) (*commontypes.GitRepositoryConfig, error) {
 	obj := &keptnv1.KeptnProject{}
 	err := client.Get(ctx, types.NamespacedName{Name: project, Namespace: namespace}, obj)
@@ -31,6 +33,7 @@ func GetUpstreamCredentials(ctx context.Context, client client.Client, project s
 	return GetGitCredentials(obj.Spec.Repository, obj.Spec.Username, obj.Spec.Password, obj.Spec.DefaultBranch)
 }
 
+//GetGitCredentials creates git credentials struct from information
 func GetGitCredentials(remoteURI, user, token string, branch string) (*commontypes.GitRepositoryConfig, error) {
 	secret, err := decryptSecret(token)
 	if err != nil {

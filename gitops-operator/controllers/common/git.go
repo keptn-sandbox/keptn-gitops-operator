@@ -23,8 +23,10 @@ type GitClient interface {
 	CommitAndPushUpstream(tag string, tagExists bool) error
 }
 
+//GoGitClientFactory ...
 type GoGitClientFactory struct{}
 
+//GetClient gets the client configuration for Git
 func (GoGitClientFactory) GetClient(repositoryConfig internaltypes.GitRepositoryConfig, dir string) (GitClient, error) {
 	client := &GoGitClient{}
 	if err := client.Checkout(repositoryConfig, dir); err != nil {
@@ -33,6 +35,7 @@ func (GoGitClientFactory) GetClient(repositoryConfig internaltypes.GitRepository
 	return client, nil
 }
 
+//GoGitClient speecifies the repository configuration
 type GoGitClient struct {
 	repoConfig internaltypes.GitRepositoryConfig
 	repo       *git.Repository
@@ -62,6 +65,7 @@ func (gc *GoGitClient) Checkout(repositoryConfig internaltypes.GitRepositoryConf
 	return nil
 }
 
+//TagExists checks if a git tag exists
 func (gc *GoGitClient) TagExists(tag string) error {
 	tagFoundErr := "tag was found"
 	tags, err := gc.repo.TagObjects()
@@ -78,6 +82,7 @@ func (gc *GoGitClient) TagExists(tag string) error {
 	return err
 }
 
+//GetLastCommitHash gets the last commit hash
 func (gc *GoGitClient) GetLastCommitHash() (string, error) {
 	head, err := gc.repo.Head()
 	if err != nil {
@@ -86,6 +91,7 @@ func (gc *GoGitClient) GetLastCommitHash() (string, error) {
 	return head.Hash().String(), nil
 }
 
+//CommitAndPushUpstream commits changes and pushes them to the keptn upstream
 func (gc *GoGitClient) CommitAndPushUpstream(tag string, tagExists bool) error {
 	authentication := &githttp.BasicAuth{
 		Username: gc.repoConfig.User,
@@ -167,6 +173,7 @@ func (gc *GoGitClient) CommitAndPushUpstream(tag string, tagExists bool) error {
 	return nil
 }
 
+//DeleteTag deletes a tag in a git repo
 func (gc *GoGitClient) DeleteTag(worktree *git.Worktree, tag string) error {
 	err := gc.repo.DeleteTag(tag)
 	if err != nil {
