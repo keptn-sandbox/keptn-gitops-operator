@@ -162,7 +162,7 @@ jobs:
             * ${{ fromJSON(steps.docker_build.outputs.BUILD_METADATA)['image.name'] }}
 
   helm_chart_build:
-    needs: [prepare_ci_run, docker_build]
+    needs: [prepare_ci_run]
     name: Build Helm Charts
     runs-on: ubuntu-20.04
     env:
@@ -190,7 +190,6 @@ jobs:
           path: installer/*.tgz
 
   custom_resource_build:
-    needs: [prepare_ci_run, docker_build]
     name: Build Custom Resource Definitions
     runs-on: ubuntu-20.04
     strategy:
@@ -198,7 +197,7 @@ jobs:
         service: [ "keptn-operator", "gitops-operator"]
     steps:
       - name: Build Custom Resources Charts
-        id: build_helm_charts
+        id: build_crd
         working-directory: ${{ matrix.service }}
         run: ./gh-actions-scripts/generate_crds.sh ${{ matrix.service }}
 
