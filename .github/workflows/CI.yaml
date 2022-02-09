@@ -117,8 +117,6 @@ jobs:
         with:
           env-file: .ci_env
 
-
-
       - name: Docker Build
         id: docker_build
         uses: ./.github/actions/docker-build
@@ -196,14 +194,23 @@ jobs:
       matrix:
         service: [ "keptn-operator", "gitops-operator"]
     steps:
-      - name: Build Custom Resources Charts
-        id: build_crd
-        working-directory: ${{ matrix.service }}
-        run: ./gh-actions-scripts/generate_crds.sh ${{ matrix.service }}
+    - name: Checkout Code
+      uses: actions/checkout@v2.4.0
 
-      - name: Upload CRD as an artifact
-        id: upload_crd
-        uses: actions/upload-artifact@v2
-        with:
-          name: crd_${{ matrix.service }}
-          path: ${{ matrix.service }}/crds/*.yaml
+    - name: Load CI Environment from .ci_env
+      id: load_ci_env
+      uses: c-py/action-dotenv-to-setenv@v3
+      with:
+        env-file: .ci_env
+
+    - name: Build Custom Resources Charts
+      id: build_crd
+      working-directory: ${{ matrix.service }}
+      run: ./gh-actions-scripts/generate_crds.sh ${{ matrix.service }}
+      
+    - name: Upload CRD as an artifact
+      id: upload_crd
+      uses: actions/upload-artifact@v2
+      with:
+        name: crd_${{ matrix.service }}
+        path: ${{ matrix.service }}/crds/*.yaml
