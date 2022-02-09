@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func (r *KeptnGitRepositoryReconciler) checkCreateInstance(ctx context.Context, repo gitopsv1.KeptnGitRepository, instance keptnv1.KeptnInstance) (error, bool) {
+func (r *KeptnGitRepositoryReconciler) checkCreateInstance(ctx context.Context, repo gitopsv1.KeptnGitRepository, instance keptnv1.KeptnInstance) (bool, error) {
 	found := &keptnv1.KeptnInstance{}
 
 	instance.ObjectMeta.Namespace = repo.Namespace
@@ -22,7 +22,7 @@ func (r *KeptnGitRepositoryReconciler) checkCreateInstance(ctx context.Context, 
 
 	err := controllerutil.SetControllerReference(&repo, &instance, r.Scheme)
 	if err != nil {
-		return fmt.Errorf("could not set controller reference: %w", err), false
+		return false, fmt.Errorf("could not set controller reference: %w", err)
 	}
 
 	err = r.Client.Get(ctx, types.NamespacedName{Name: instance.ObjectMeta.Name, Namespace: repo.Namespace}, found)
@@ -31,20 +31,20 @@ func (r *KeptnGitRepositoryReconciler) checkCreateInstance(ctx context.Context, 
 		err = r.Client.Create(ctx, &instance)
 		if err != nil {
 			r.Log.Error(err, "Failed to create new Instance", "Instance.Namespace", repo.Namespace, "Instance.Name", instance.Name)
-			return err, false
+			return false, err
 		}
-		return nil, true
+		return true, nil
 	} else if err != nil {
 		r.Log.Error(err, "Failed to get Instance")
-		return err, false
+		return false, err
 	}
 
 	err = r.reconcileInstance(ctx, repo, instance)
 	if err != nil {
-		return err, false
+		return false, err
 	}
 
-	return nil, false
+	return false, nil
 }
 
 func (r *KeptnGitRepositoryReconciler) reconcileInstance(ctx context.Context, repo gitopsv1.KeptnGitRepository, instance keptnv1.KeptnInstance) error {
@@ -63,10 +63,10 @@ func (r *KeptnGitRepositoryReconciler) reconcileInstance(ctx context.Context, re
 		if err != nil {
 			r.Log.Error(err, "Failed to update Instance", "Instance.Namespace", obj.Namespace, "Instance.Name", obj.Name)
 			return err
-		} else {
-			r.Recorder.Event(&repo, "Normal", "Updated", fmt.Sprintf("Updated instance %s/%s (Reason: Instance changed)", instance.Namespace, instance.Name))
-			r.Log.Info("Project updated")
 		}
+		r.Recorder.Event(&repo, "Normal", "Updated", fmt.Sprintf("Updated instance %s/%s (Reason: Instance changed)", instance.Namespace, instance.Name))
+		r.Log.Info("Project updated")
+
 	}
 	return nil
 }

@@ -123,7 +123,7 @@ func (r *KeptnGitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.R
 	}
 
 	for _, instance := range manifests.instances {
-		err, created := r.checkCreateInstance(ctx, *keptnGitRepository, instance)
+		created, err := r.checkCreateInstance(ctx, *keptnGitRepository, instance)
 		if err != nil {
 			r.Log.Error(err, "Failed to check or create instance")
 			return ctrl.Result{}, err
