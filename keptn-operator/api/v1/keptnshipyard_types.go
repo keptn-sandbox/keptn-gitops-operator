@@ -27,16 +27,8 @@ import (
 type KeptnShipyardSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Project string `json:"project" yaml:"project"`
-
-	// Stages define the stages included in this shipyard
-	Stages []KeptnShipyardStage `json:"stages" yaml:"stages,omitempty"`
-}
-
-// KeptnShipyardStage contains the reference to the KeptnStage object
-type KeptnShipyardStage struct {
-	// StageRef contains the reference to the KeptnStage object
-	StageRef string `json:"stageRef" yaml:"stageRef"`
+	Project  string   `json:"project" yaml:"project"`
+	Shipyard Shipyard `json:"shipyard"`
 }
 
 // KeptnShipyardStatus defines the observed state of KeptnShipyard

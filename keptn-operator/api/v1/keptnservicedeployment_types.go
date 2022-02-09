@@ -45,12 +45,14 @@ type KeptnServiceDeploymentStatus struct {
 	DeploymentProgress KeptnServiceDeploymentProgress      `json:"progress,omitempty"`
 }
 
+//KeptnServiceDeploymentPrerequisites defines all of the objects needed to deploy a service
 type KeptnServiceDeploymentPrerequisites struct {
 	ProjectExists bool `json:"projectExists,omitempty"`
 	ServiceExists bool `json:"serviceExists,omitempty"`
 	StageExists   bool `json:"stageExists,omitempty"`
 }
 
+//KeptnServiceDeploymentProgress describes the state of the deployment progress
 type KeptnServiceDeploymentProgress struct {
 	ArtifactAvailable   bool `json:"artifactAvailable,omitempty"`
 	DeploymentTriggered bool `json:"deploymentTriggered,omitempty"`
