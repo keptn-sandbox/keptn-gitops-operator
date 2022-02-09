@@ -117,6 +117,11 @@ jobs:
         with:
           env-file: .ci_env
 
+      - name: Copy files for gitops operator
+        id: copy_files_gitops
+        if: ${{ matrix.service }} == 'gitops-operator'
+        run: cp -r keptn-operator gitops-operator/
+
       - name: Docker Build
         id: docker_build
         uses: ./.github/actions/docker-build
