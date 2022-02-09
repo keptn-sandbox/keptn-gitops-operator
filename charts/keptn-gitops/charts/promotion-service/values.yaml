@@ -1,6 +1,6 @@
 promotionservice:
   image:
-    repository: keptnsandbox/gitops-promotion-service:latest # Container Image Name
+    repository: latest # Container Image Name
     pullPolicy: Always                   # Kubernetes Image Pull Policy
   service:
     enabled: true                              # Creates a Kubernetes Service for the promotion-service
