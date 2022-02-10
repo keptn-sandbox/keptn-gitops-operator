@@ -1,8 +1,8 @@
 promotionservice:
   image:
-    repository: docker.io/keptnsandbox/promotion-service # Container Image Name
+    repository: docker.io/keptnsandbox/gitops-promotion-service # Container Image Name
     pullPolicy: Always                   # Kubernetes Image Pull Policy
-    tag: ""                                    # Container Tag
+    tag: "latest"                        # Container Tag
   service:
     enabled: true                              # Creates a Kubernetes Service for the promotion-service
 
@@ -13,7 +13,7 @@ distributor:
   image:
     repository: docker.io/keptn/distributor  # Container Image Name
     pullPolicy: IfNotPresent                 # Kubernetes Image Pull Policy
-    tag: ""                                  # Container Tag
+    tag: "0.12.0"                            # Container Tag
 
 remoteControlPlane:
   enabled: false                             # Enables remote execution plane mode

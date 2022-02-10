@@ -1,0 +1,121 @@
+name: Create Pre-Release
+on:
+  workflow_dispatch:
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  ############################################################################
+  # Build Docker Image                                                      #
+  ############################################################################
+  docker_build:
+    strategy:
+      matrix:
+        service: ["keptn-operator", "gitops-operator", "promotion-service"]
+    name: Docker Build
+    runs-on: ubuntu-20.04
+    env:
+      VERSION: ${{ needs.pre-release.outputs.RELEASE_TAG }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2.4.0
+
+      - name: Load CI Environment from .ci_env
+        id: load_ci_env
+        uses: c-py/action-dotenv-to-setenv@v3
+        with:
+          env-file: .ci_env
+
+      - name: Copy files for gitops operator
+        id: copy_files_gitops
+        if: ${{ matrix.service }} == 'gitops-operator'
+        run: cp -r keptn-operator gitops-operator/
+
+      - name: Docker Build
+        id: docker_build_image
+        uses: ./.github/actions/docker-build
+        with:
+          TAGS: |
+            ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}
+          BUILD_ARGS: |
+            version=${{ env.VERSION }}
+          CONTEXT: ${{ matrix.service }}
+          DOCKERFILE: ${{ matrix.service }}/docker/Dockerfile
+          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results.sarif'
+          exit-code: 1
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  helm_chart_build:
+    name: Build Helm Charts
+    runs-on: ubuntu-20.04
+    env:
+      VERSION: ${{ needs.prepare_ci_run.outputs.VERSION }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2.4.0
+
+      - name: Load CI Environment from .ci_env
+        id: load_ci_env
+        uses: c-py/action-dotenv-to-setenv@v3
+        with:
+          env-file: .ci_env
+
+      - name: Build Helm Charts
+        id: build_helm_charts
+        run: ./gh-actions-scripts/build_helm_chart.sh "${VERSION}" "${VERSION}" keptn-gitops ./charts/keptn-gitops
+
+      - name: Upload Helm Chart as release asset
+        env:
+          RELEASE_TAG: ${{ needs.pre-release.outputs.RELEASE_TAG }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "$RELEASE_TAG" installer/*.tgz
+
+  custom_resource_build:
+    name: Build Custom Resource Definitions
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        service: [ "keptn-operator", "gitops-operator"]
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2.4.0
+
+    - name: Load CI Environment from .ci_env
+      id: load_ci_env
+      uses: c-py/action-dotenv-to-setenv@v3
+      with:
+        env-file: .ci_env
+
+    - name: Build Custom Resource Manifests
+      id: build_crd
+      working-directory: ${{ matrix.service }}
+      run: ../gh-actions-scripts/generate_crds.sh ${{ matrix.service }}
+
+    - name: Upload Helm Chart as release asset
+      env:
+        RELEASE_TAG: ${{ needs.pre-release.outputs.RELEASE_TAG }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload "$RELEASE_TAG" ${{ matrix.service }}/crds/*.yaml
+
+    - name: Upload CRD as an artifact
+      id: upload_crd
+      uses: actions/upload-artifact@v2
+      with:
+        name: crd_${{ matrix.service }}
+        path: ${{ matrix.service }}/crds/*.yaml
