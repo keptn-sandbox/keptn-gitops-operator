@@ -1,9 +1,11 @@
-name: Create Pre-Release
-on:
-  workflow_dispatch:
+name: Release
 defaults:
   run:
     shell: bash
+on:
+  release:
+    types:
+      - created
 
 jobs:
   ############################################################################
@@ -37,9 +39,9 @@ jobs:
         uses: ./.github/actions/docker-build
         with:
           TAGS: |
-            ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}
+            ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ github.event.release.tag_name }}
           BUILD_ARGS: |
-            version=${{ env.VERSION }}
+            version=${{ github.event.release.tag_name }}
           CONTEXT: ${{ matrix.service }}
           DOCKERFILE: ${{ matrix.service }}/docker/Dockerfile
           REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
@@ -48,7 +50,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ env.VERSION }}
+          image-ref: ${{ env.DOCKER_ORGANIZATION }}/gitops-${{ matrix.service }}:${{ github.event.release.tag_name }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results.sarif'
@@ -63,7 +65,7 @@ jobs:
     name: Build Helm Charts
     runs-on: ubuntu-20.04
     env:
-      VERSION: ${{ needs.prepare_ci_run.outputs.VERSION }}
+      VERSION: ${{ github.event.release.tag_name }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2.4.0
@@ -76,11 +78,11 @@ jobs:
 
       - name: Build Helm Charts
         id: build_helm_charts
-        run: ./gh-actions-scripts/build_helm_chart.sh "${VERSION}" "${VERSION}" keptn-gitops ./charts/keptn-gitops
+        run: ./gh-actions-scripts/build_helm_chart.sh "${{ github.event.release.tag_name }}" "${{ github.event.release.tag_name }}" keptn-gitops ./charts/keptn-gitops
 
       - name: Upload Helm Chart as release asset
         env:
-          RELEASE_TAG: ${{ needs.pre-release.outputs.RELEASE_TAG }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "$RELEASE_TAG" installer/*.tgz
@@ -108,7 +110,7 @@ jobs:
 
     - name: Upload Helm Chart as release asset
       env:
-        RELEASE_TAG: ${{ needs.pre-release.outputs.RELEASE_TAG }}
+        RELEASE_TAG: ${{ github.event.release.tag_name }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         gh release upload "$RELEASE_TAG" ${{ matrix.service }}/crds/*.yaml
