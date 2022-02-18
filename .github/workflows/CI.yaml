@@ -192,6 +192,60 @@ jobs:
           name: helm-charts
           path: installer/*.tgz
 
+  secrets-helper-build:
+    needs: [prepare_ci_run]
+    name: Build Secrets Helper
+    runs-on: ubuntu-20.04
+    env:
+      VERSION: ${{ needs.prepare_ci_run.outputs.VERSION }}
+      DATETIME: ${{ needs.prepare_ci_run.outputs.DATETIME }}
+    strategy:
+      matrix:
+        goosarch:
+          - 'darwin/amd64'
+          - 'darwin/arm64'
+          - 'linux/amd64'
+          - 'linux/arm'
+          - 'linux/arm64'
+          - 'windows/386'
+          - 'windows/amd64'
+          - 'windows/arm'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2.4.0
+
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.17
+
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Get OS and arch info
+        run: |
+          GOOSARCH=${{matrix.goosarch}}
+          GOOS=${GOOSARCH%/*}
+          GOARCH=${GOOSARCH#*/}
+          BINARY_NAME=keptn-gitops-secrets-$GOOS-$GOARCH
+          echo "BINARY_NAME=$BINARY_NAME" >> $GITHUB_ENV
+          echo "GOOS=$GOOS" >> $GITHUB_ENV
+          echo "GOARCH=$GOARCH" >> $GITHUB_ENV
+      - name: Build
+        working-directory: keptn-gitops-secrets
+        run: |
+          go build -o "$BINARY_NAME" -v
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.BINARY_NAME }}
+          path: keptn-gitops-secrets/${{ env.BINARY_NAME }}
+
   custom_resource_build:
     name: Build Custom Resource Definitions
     runs-on: ubuntu-20.04
