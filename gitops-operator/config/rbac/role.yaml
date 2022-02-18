@@ -7,6 +7,14 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - keptn.sh
   resources:
   - keptngitrepositories
@@ -35,14 +43,72 @@ rules:
 - apiGroups:
   - keptn.sh
   resources:
-  - keptnprojects/
+  - keptninstances/
   verbs:
+  - create
   - get
   - list
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnprojects/
+  verbs:
+  - create
+  - get
+  - list
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnscheduledexecution/
+  verbs:
+  - create
+  - get
+  - list
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnsequenceexecution/
+  verbs:
+  - create
+  - get
+  - list
+  - update
 - apiGroups:
   - keptn.sh
   resources:
   - keptnsequences/
   verbs:
+  - create
   - get
   - list
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservicedeployment/
+  verbs:
+  - create
+  - get
+  - list
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservices/
+  verbs:
+  - create
+  - get
+  - list
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnstage/
+  verbs:
+  - create
+  - get
+  - list
+  - update

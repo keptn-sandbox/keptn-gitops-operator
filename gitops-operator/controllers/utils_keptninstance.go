@@ -11,6 +11,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+//+kubebuilder:rbac:groups=keptn.sh,resources=keptninstances/,verbs=get;list;create;update
+
 func (r *KeptnGitRepositoryReconciler) checkCreateInstance(ctx context.Context, repo gitopsv1.KeptnGitRepository, instance keptnv1.KeptnInstance) (bool, error) {
 	found := &keptnv1.KeptnInstance{}
 

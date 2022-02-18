@@ -57,8 +57,10 @@ type KeptnManifests struct {
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptngitrepositories,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptngitrepositories/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptngitrepositories/finalizers,verbs=update
+//+kubebuilder:rbac:groups=keptn.sh,resources=keptngitrepositories/finalizers,verbs=update
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnsequences/,verbs=get;list
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnprojects/,verbs=get;list
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

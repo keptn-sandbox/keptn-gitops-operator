@@ -11,6 +11,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+//+kubebuilder:rbac:groups=keptn.sh,resources=keptnstage/,verbs=get;list;create;update
+
 func (r *KeptnGitRepositoryReconciler) checkCreateStage(ctx context.Context, repo gitopsv1.KeptnGitRepository, stage keptnv1.KeptnStage) (error, bool) {
 	found := &keptnv1.KeptnStage{}
 
