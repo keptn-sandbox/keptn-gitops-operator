@@ -34,6 +34,7 @@ find ./$CHART_DIR -name values.yaml -exec sed -i -- "s/latest/${VERSION}  /g" {}
 
 for i in keptn-operator gitops-operator; do
   if [[ -f "$i/config/rbac/role.yaml" ]]; then
+    ls $CHART_DIR/$i
     cat $i/config/rbac/role.yaml | sed "s/name\: manager-role/name\: \{\{ include \"${i}.serviceAccountName\" . \}\}-role/g" > ${CHART_DIR}/${i}/templates/role.yaml
   fi
 done
