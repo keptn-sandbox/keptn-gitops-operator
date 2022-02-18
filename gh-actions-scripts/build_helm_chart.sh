@@ -32,6 +32,8 @@ find ./$CHART_DIR -name Chart.yaml -exec sed -i -- "s/appVersion: latest/appVers
 find ./$CHART_DIR -name Chart.yaml -exec sed -i -- "s/version: latest/version: \"${VERSION}\"/g" {} \;
 find ./$CHART_DIR -name values.yaml -exec sed -i -- "s/latest/${VERSION}  /g" {} \;
 
+ls $CHART_DIR
+
 for i in keptn-operator gitops-operator; do
   if [[ -f "$i/config/rbac/role.yaml" ]]; then
     ls $CHART_DIR/$i
