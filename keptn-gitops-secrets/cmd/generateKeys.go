@@ -19,6 +19,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
@@ -70,8 +71,8 @@ func GenerateKeys(filebase string) (private, public string) {
 func (keygeneration *keyGenerationImpl) RunKeyGeneration() error {
 	private, public := GenerateKeys(*keyGenerationParams.Basename)
 
-	fmt.Println(private)
-	fmt.Println(public)
+	fmt.Println("Private Key:\n" + base64.StdEncoding.EncodeToString([]byte(private)) + "\n")
+	fmt.Println("Public Key:\n" + base64.StdEncoding.EncodeToString([]byte(public)))
 
 	return nil
 }
