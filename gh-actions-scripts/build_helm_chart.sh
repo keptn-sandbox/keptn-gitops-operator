@@ -55,7 +55,7 @@ fi
 
 mv "${IMAGE}-${VERSION}.tgz" "installer/${IMAGE}-${VERSION}.tgz"
 #verify the chart
-helm template "installer/${IMAGE}-${VERSION}.tgz" --dry-run > /dev/null
+helm template "installer/${IMAGE}-${VERSION}.tgz" --dry-run --set global.rsaSecret.privateBase64="mytest123" > /dev/null
 
 if [ $? -ne 0 ]; then
   echo "::error Helm Chart for ${IMAGE} has templating errors -exiting"
