@@ -32,9 +32,11 @@ find ./$CHART_DIR -name Chart.yaml -exec sed -i -- "s/appVersion: latest/appVers
 find ./$CHART_DIR -name Chart.yaml -exec sed -i -- "s/version: latest/version: \"${VERSION}\"/g" {} \;
 find ./$CHART_DIR -name values.yaml -exec sed -i -- "s/latest/${VERSION}  /g" {} \;
 
-if [[ -f "${IMAGE}/config/rbac/role.yaml" ]]; then
-  cat ${IMAGE}/config/rbac/role.yaml | sed "s/name\: manager-role/name\: \{\{ include \"${IMAGE}.serviceAccountName\" . \}\}-role/g" >> ${CHART_DIR}/templates/role.yaml
-fi
+for i in keptn-operator gitops-operator; do
+  if [[ -f "$i/config/rbac/role.yaml" ]]; then
+    cat $i/config/rbac/role.yaml | sed "s/name\: manager-role/name\: \{\{ include \"${i}.serviceAccountName\" . \}\}-role/g" >> ${CHART_DIR}/$i/templates/role.yaml
+  fi
+done
 
 mkdir installer/
 
