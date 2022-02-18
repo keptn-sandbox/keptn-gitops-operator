@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "bitbucket.lab.dynatrace.org/pfi/dynatrace-platform-operator/support/secret-encrypt/cmd"
+import "github.com/keptn-sandbox/keptn-gitops-operator/keptn-gitops-secrets/cmd"
 
 func main() {
 	cmd.Execute()

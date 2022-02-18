@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	//TODO: lib approval
 	"github.com/spf13/cobra"
 )
 
