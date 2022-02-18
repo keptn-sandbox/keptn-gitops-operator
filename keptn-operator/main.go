@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update
+
 package main
 
 import (
