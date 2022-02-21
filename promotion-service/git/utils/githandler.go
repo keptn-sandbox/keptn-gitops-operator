@@ -26,12 +26,6 @@ import (
 	"time"
 )
 
-type GitCredentials struct {
-	User      string `json:"user,omitempty"`
-	Token     string `json:"token,omitempty"`
-	RemoteURI string `json:"remoteURI,omitempty"`
-}
-
 //go:generate moq -pkg githandler_mock -skip-ensure -out ../eventhandler/fake/githandler_mock.go . GitHandlerInterface
 type GitHandlerInterface interface {
 	UpdateGitRepo(credentials *GitRepositoryConfig, stage string, service string, version string) error
@@ -40,6 +34,7 @@ type GitHandlerInterface interface {
 type GitHandler struct {
 }
 
+//GetUpstreamCredentials gets the KeptnProject Resource for the Project and reads the git credentials
 func GetUpstreamCredentials(project string, namespace string) (*GitRepositoryConfig, error) {
 	scheme := runtime.NewScheme()
 	_ = clientgoscheme.AddToScheme(scheme)
@@ -60,6 +55,7 @@ func GetUpstreamCredentials(project string, namespace string) (*GitRepositoryCon
 	return GetGitCredentials(keptnproject.Spec.Repository, keptnproject.Spec.Username, keptnproject.Spec.Password, keptnproject.Spec.DefaultBranch)
 }
 
+//GetGitCredentials creates a unified struct for git credentials
 func GetGitCredentials(remoteURI, user, token string, branch string) (*GitRepositoryConfig, error) {
 	secret, err := DecryptSecret(token)
 	if err != nil {

@@ -78,14 +78,14 @@ func TestHandlePromotionTriggeredEvent(t *testing.T) {
 				Logger: keptncommon.NewLogger("", "", ""),
 				Event:  getPromotionTriggeredEvent(true),
 				GitHandler: &githandler_mock.GitHandlerInterfaceMock{
-					GetGitSecretFunc: func(project string, namespace string) (utils.GitCredentials, error) {
-						return utils.GitCredentials{
+					GetGitSecretFunc: func(project string, namespace string) (utils.GitRepositoryConfig, error) {
+						return utils.GitRepositoryConfig{
 							User:      "",
 							Token:     "",
 							RemoteURI: "",
 						}, nil
 					},
-					UpdateGitRepoFunc: func(credentials utils.GitCredentials, stage string, service string, version string) error {
+					UpdateGitRepoFunc: func(credentials utils.GitRepositoryConfig, stage string, service string, version string) error {
 						return nil
 					},
 				},
@@ -149,8 +149,8 @@ func TestHandlePromotionTriggeredEvent(t *testing.T) {
 				Logger: keptncommon.NewLogger("", "", ""),
 				Event:  getPromotionTriggeredEvent(true),
 				GitHandler: &githandler_mock.GitHandlerInterfaceMock{
-					GetGitSecretFunc: func(project string, namespace string) (utils.GitCredentials, error) {
-						return utils.GitCredentials{}, errors.New("kubernetes secret error")
+					GetGitSecretFunc: func(project string, namespace string) (utils.GitRepositoryConfig, error) {
+						return utils.GitRepositoryConfig{}, errors.New("kubernetes secret error")
 					},
 				},
 			},
@@ -184,14 +184,14 @@ func TestHandlePromotionTriggeredEvent(t *testing.T) {
 				Logger: keptncommon.NewLogger("", "", ""),
 				Event:  getPromotionTriggeredEvent(true),
 				GitHandler: &githandler_mock.GitHandlerInterfaceMock{
-					GetGitSecretFunc: func(project string, namespace string) (utils.GitCredentials, error) {
-						return utils.GitCredentials{
+					GetGitSecretFunc: func(project string, namespace string) (utils.GitRepositoryConfig, error) {
+						return utils.GitRepositoryConfig{
 							User:      "",
 							Token:     "",
 							RemoteURI: "",
 						}, nil
 					},
-					UpdateGitRepoFunc: func(credentials utils.GitCredentials, stage string, service string, version string) error {
+					UpdateGitRepoFunc: func(credentials utils.GitRepositoryConfig, stage string, service string, version string) error {
 						return errors.New("git push error")
 					},
 				},
