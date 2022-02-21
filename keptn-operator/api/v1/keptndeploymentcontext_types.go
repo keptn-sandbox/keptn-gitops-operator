@@ -23,6 +23,10 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+//+kubebuilder:rbac:groups=keptn.sh,resources=keptndeploymentcontexts,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=keptn.sh,resources=keptndeploymentcontexts/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=keptn.sh,resources=keptndeploymentcontexts/finalizers,verbs=update
+
 // KeptnDeploymentContextSpec defines the desired state of KeptnDeploymentContext
 type KeptnDeploymentContextSpec struct {
 	Project string `json:"project"`
