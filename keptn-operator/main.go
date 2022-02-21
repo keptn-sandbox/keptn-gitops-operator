@@ -16,6 +16,7 @@ limitations under the License.
 
 //+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update
 //+kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;list;create;update
+//+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 package main
 
