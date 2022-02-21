@@ -61,12 +61,26 @@ rules:
 - apiGroups:
   - keptn.sh
   resources:
+  - keptninstances
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - keptn.sh
+  resources:
   - keptninstances/
   verbs:
   - create
   - get
   - list
   - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnprojects
+  verbs:
+  - get
+  - list
 - apiGroups:
   - keptn.sh
   resources:
@@ -94,6 +108,13 @@ rules:
   - get
   - list
   - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnsequences
+  verbs:
+  - get
+  - list
 - apiGroups:
   - keptn.sh
   resources:
