@@ -226,7 +226,7 @@ func (r *KeptnServiceDeploymentReconciler) checkIfServiceExists(ctx context.Cont
 	filteredProjects := utils.FilterProjects(projects, project)
 	if len(filteredProjects) == 0 {
 		if project != "" {
-			r.ReqLogger.Info("No project %s found\n", project)
+			r.ReqLogger.Info(fmt.Sprintf("No project %s found", project))
 			return serviceRes, nil, false
 		}
 		return serviceRes, nil, false
@@ -240,7 +240,7 @@ func (r *KeptnServiceDeploymentReconciler) checkIfServiceExists(ctx context.Cont
 			}
 			filteredServices := utils.FilterServices(services, service)
 			if len(filteredServices) == 0 {
-				r.ReqLogger.Info("No services %s found in project %s", service, project)
+				r.ReqLogger.Info(fmt.Sprintf("No services %s found in project %s", service, project))
 				return serviceRes, nil, false
 			}
 			return serviceRes, proj.Stages, true
