@@ -74,6 +74,7 @@ func GetGitCredentials(remoteURI, user, token string, branch string) (*GitReposi
 	}, nil
 }
 
+//UpdateGitRepo updates the upstream repository
 func (gh *GitHandler) UpdateGitRepo(credentials *GitRepositoryConfig, stage string, service string, version string) error {
 	authentication := &http.BasicAuth{
 		Username: credentials.User,
