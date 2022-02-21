@@ -41,6 +41,7 @@ func GetUpstreamCredentials(project string, namespace string) (*GitRepositoryCon
 	_ = keptnv1.AddToScheme(scheme)
 
 	kubeconfig := ctrl.GetConfigOrDie()
+
 	kubeclient, err := client.New(kubeconfig, client.Options{Scheme: scheme})
 	if err != nil {
 		log.Fatal(err)

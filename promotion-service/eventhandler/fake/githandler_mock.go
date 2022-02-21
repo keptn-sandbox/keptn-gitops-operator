@@ -4,7 +4,7 @@
 package githandler_mock
 
 import (
-	"github.com/keptn-sandbox/keptn-git-toolbox/promotion-service/git/utils"
+	"github.com/keptn-sandbox/keptn-git-toolbox/promotion-service/pkg/utils"
 	"sync"
 )
 

@@ -1,26 +1,12 @@
 package eventhandler
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"github.com/keptn-sandbox/keptn-git-toolbox/promotion-service/git/utils"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"strings"
-	"testing"
-	"time"
-
 	cloudevents "github.com/cloudevents/sdk-go/v2" // make sure to use v2 cloudevents here
 	"github.com/cloudevents/sdk-go/v2/types"
-	githandler_mock "github.com/keptn-sandbox/keptn-git-toolbox/promotion-service/eventhandler/fake"
-	keptncommon "github.com/keptn/go-utils/pkg/lib/keptn"
 	keptnv2 "github.com/keptn/go-utils/pkg/lib/v0_2_0"
 )
 
+/*
 func TestHandlePromotionTriggeredEvent(t *testing.T) {
 	type channelEvent struct {
 		Type string `json:"type"`
@@ -275,6 +261,8 @@ func TestHandlePromotionTriggeredEvent(t *testing.T) {
 	}
 }
 
+
+*/
 func getPromotionTriggeredEvent(appendLabel bool) cloudevents.Event {
 	data := `
     "project": "sockshop",
