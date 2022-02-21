@@ -51,7 +51,7 @@ spec:
           {{ if .Values.global.rsaSecret.secretName }}
         envFrom:
           - secretRef:
-              name: .Values.global.rsaSecret.secretName
+              name: {{ .Values.global.rsaSecret.secretName }}
               {{ else }}
         env:
         {{ if .Values.secret_encryption_private_key }}
