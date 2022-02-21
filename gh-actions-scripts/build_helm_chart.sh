@@ -31,7 +31,7 @@ fi
 # replace "appVersion: latest" with "appVersion: $VERSION" in all Chart.yaml files
 find ./$CHART_DIR -name Chart.yaml -exec sed -i -- "s/appVersion: latest/appVersion: \"${APP_VERSION}\"/g" {} \;
 find ./$CHART_DIR -name Chart.yaml -exec sed -i -- "s/version: latest/version: \"${VERSION}\"/g" {} \;
-find ./$CHART_DIR -name values.yaml -exec sed -i -- "s/latest/${VERSION}  /g" {} \;
+find ./$CHART_DIR -name values.yaml -exec sed -i -- "s/latest/${APP_VERSION}  /g" {} \;
 
 for i in keptn-operator gitops-operator; do
   if [[ -f "$i/config/rbac/role.yaml" ]]; then
