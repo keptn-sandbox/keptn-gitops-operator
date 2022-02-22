@@ -1,4 +1,4 @@
-module github.com/keptn-sandbox/keptn-git-toolbox/promotion-service
+module github.com/keptn-sandbox/keptn-gitops-operator/promotion-service
 
 go 1.17
 

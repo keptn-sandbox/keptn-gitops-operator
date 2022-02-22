@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	cloudevents "github.com/cloudevents/sdk-go/v2" // make sure to use v2 cloudevents here
-	"github.com/keptn-sandbox/keptn-git-toolbox/promotion-service/common"
-	"github.com/keptn-sandbox/keptn-git-toolbox/promotion-service/pkg/utils"
+	"github.com/keptn-sandbox/keptn-gitops-operator/promotion-service/common"
+	"github.com/keptn-sandbox/keptn-gitops-operator/promotion-service/pkg/utils"
 	keptnv2 "github.com/keptn/go-utils/pkg/lib/v0_2_0"
 )
 

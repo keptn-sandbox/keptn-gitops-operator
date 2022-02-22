@@ -6,8 +6,8 @@ import (
 	"fmt"
 	cloudevents "github.com/cloudevents/sdk-go/v2" // make sure to use v2 cloudevents here
 	"github.com/kelseyhightower/envconfig"
-	"github.com/keptn-sandbox/keptn-git-toolbox/promotion-service/eventhandler"
-	"github.com/keptn-sandbox/keptn-git-toolbox/promotion-service/pkg/utils"
+	"github.com/keptn-sandbox/keptn-gitops-operator/promotion-service/eventhandler"
+	"github.com/keptn-sandbox/keptn-gitops-operator/promotion-service/pkg/utils"
 	"github.com/keptn/go-utils/pkg/lib/keptn"
 	keptnv2 "github.com/keptn/go-utils/pkg/lib/v0_2_0"
 	"log"

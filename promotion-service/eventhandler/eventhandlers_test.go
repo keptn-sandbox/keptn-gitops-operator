@@ -6,6 +6,7 @@ import (
 	keptnv2 "github.com/keptn/go-utils/pkg/lib/v0_2_0"
 )
 
+// TO BE REFINED
 /*
 func TestHandlePromotionTriggeredEvent(t *testing.T) {
 	type channelEvent struct {
