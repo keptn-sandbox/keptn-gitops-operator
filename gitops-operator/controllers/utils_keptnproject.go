@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-//+kubebuilder:rbac:groups=keptn.sh,resources=keptnprojects/,verbs=get;list;create;update
+//+kubebuilder:rbac:groups=keptn.sh,resources=keptnprojects,verbs=get;list;create;update;watch
 
 func (r *KeptnGitRepositoryReconciler) checkCreateProject(ctx context.Context, repo gitopsv1.KeptnGitRepository, project keptnv1.KeptnProject) (error, bool) {
 	found := &keptnv1.KeptnProject{}

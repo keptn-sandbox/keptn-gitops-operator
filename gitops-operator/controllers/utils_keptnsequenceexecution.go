@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-//+kubebuilder:rbac:groups=keptn.sh,resources=keptnsequenceexecution/,verbs=get;list;create;update
+//+kubebuilder:rbac:groups=keptn.sh,resources=keptnsequenceexecutions,verbs=get;list;create;update;watch
 
 func (r *KeptnGitRepositoryReconciler) checkCreateSequenceExecution(ctx context.Context, repo gitopsv1.KeptnGitRepository, sequenceExecution keptnv1.KeptnSequenceExecution) (error, bool) {
 	found := &keptnv1.KeptnSequenceExecution{}

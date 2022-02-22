@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-//+kubebuilder:rbac:groups=keptn.sh,resources=keptnscheduledexecution/,verbs=get;list;create;update
+//+kubebuilder:rbac:groups=keptn.sh,resources=keptnscheduledexecutions,verbs=get;list;create;update;watch
 
 func (r *KeptnGitRepositoryReconciler) checkCreateScheduledExecution(ctx context.Context, repo gitopsv1.KeptnGitRepository, scheduledExecution keptnv1.KeptnScheduledExec) (error, bool) {
 	found := &keptnv1.KeptnScheduledExec{}

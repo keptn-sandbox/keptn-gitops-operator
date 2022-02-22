@@ -63,91 +63,78 @@ rules:
   resources:
   - keptninstances
   verbs:
-  - get
-  - list
-- apiGroups:
-  - keptn.sh
-  resources:
-  - keptninstances/
-  verbs:
   - create
   - get
   - list
   - update
+  - watch
 - apiGroups:
   - keptn.sh
   resources:
   - keptnprojects
   verbs:
+  - create
   - get
   - list
+  - update
+  - watch
 - apiGroups:
   - keptn.sh
   resources:
-  - keptnprojects/
+  - keptnscheduledexecutions
   verbs:
   - create
   - get
   - list
   - update
+  - watch
 - apiGroups:
   - keptn.sh
   resources:
-  - keptnscheduledexecution/
+  - keptnsequenceexecutions
   verbs:
   - create
   - get
   - list
   - update
-- apiGroups:
-  - keptn.sh
-  resources:
-  - keptnsequenceexecution/
-  verbs:
-  - create
-  - get
-  - list
-  - update
+  - watch
 - apiGroups:
   - keptn.sh
   resources:
   - keptnsequences
   verbs:
+  - create
   - get
   - list
+  - update
+  - watch
 - apiGroups:
   - keptn.sh
   resources:
-  - keptnsequences/
+  - keptnservicedeployments
   verbs:
   - create
   - get
   - list
   - update
+  - watch
 - apiGroups:
   - keptn.sh
   resources:
-  - keptnservicedeployment/
+  - keptnservices
   verbs:
   - create
   - get
   - list
   - update
+  - watch
 - apiGroups:
   - keptn.sh
   resources:
-  - keptnservices/
+  - keptnstages
   verbs:
   - create
   - get
   - list
   - update
-- apiGroups:
-  - keptn.sh
-  resources:
-  - keptnstage/
-  verbs:
-  - create
-  - get
-  - list
-  - update
+  - watch

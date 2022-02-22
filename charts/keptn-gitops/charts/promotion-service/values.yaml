@@ -1,3 +1,5 @@
+secret_encryption_private_key: ""
+
 promotionservice:
   image:
     repository: docker.io/keptnsandbox/gitops-promotion-service # Container Image Name
