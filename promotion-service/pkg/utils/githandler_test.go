@@ -1,4 +1,4 @@
-package git
+package utils
 
 import (
 	"github.com/spf13/afero"

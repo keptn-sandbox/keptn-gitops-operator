@@ -1,3 +1,8 @@
+global:
+  rsaSecret:
+    secretName: rsa-encryption-key
+    privateBase64: ""
+
 gitops-operator:
   enabled: true
   image: keptnsandbox/gitops-gitops-operator:latest
@@ -9,3 +14,10 @@ keptn-operator:
 promotion-service:
   enabled: true
   image: keptnsandbox/gitops-promotion-service:latest
+  remoteControlPlane:
+    enabled: false                            # Enables remote execution plane mode
+    api:
+      protocol: "http"                        # Used Protocol (http, https)
+      hostname: ""                            # Hostname of the control plane cluster (and Port)
+      apiValidateTls: true                     # Defines if the control plane certificate should be validated
+      token: ""

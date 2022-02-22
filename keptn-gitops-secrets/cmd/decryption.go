@@ -1,4 +1,4 @@
-package common
+package cmd
 
 import (
 	"crypto/rand"
@@ -8,20 +8,19 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 )
 
-func decryptSecret(secret string) (string, error) {
+//DecryptSecret decrypts a given secret, returns the string if only a plaintext secre is given
+func DecryptSecret(secret string) (string, error) {
 	data := strings.Split(secret, ":")
 
 	if data[0] == "rsa" {
 		pemPrivate, ok := os.LookupEnv("RSA_PRIVATE_KEY")
 		if !ok {
 			return "", fmt.Errorf("environment variable RSA_PRIVATE_KEY is not set, will not be able to decrypt secrets")
-		}
-		if pemPrivate == "" {
-			return "", fmt.Errorf("RSA_PRIVATE_KEY is empty, will not be able to decrypt secrets")
 		}
 
 		secret, err := decryptPrivatePEM(data[1], pemPrivate)
@@ -33,8 +32,14 @@ func decryptSecret(secret string) (string, error) {
 	return secret, nil
 }
 
-func decryptPrivatePEM(message string, key string) (string, error) {
-	block, err := decodePem(key)
+func decryptPrivatePEM(message string, keyfile string) (string, error) {
+	key, err := ioutil.ReadFile(keyfile) // just pass the file name
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	block, _ := pem.Decode(key)
+
 	if err != nil {
 		return "", err
 	}
@@ -62,14 +67,4 @@ func rsaOaepDecrypt(cipherText string, privKey rsa.PrivateKey) (string, error) {
 	}
 
 	return string(plaintext), nil
-}
-
-func decodePem(key string) (*pem.Block, error) {
-	keyraw, err := base64.StdEncoding.DecodeString(key)
-	if err != nil {
-		return nil, err
-	}
-	block, _ := pem.Decode(keyraw)
-
-	return block, nil
 }

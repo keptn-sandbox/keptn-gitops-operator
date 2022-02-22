@@ -9,11 +9,63 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - get
+  - list
+  - update
+- apiGroups:
+  - ""
+  resources:
   - secrets
   verbs:
   - get
   - list
   - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptndeploymentcontexts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptndeploymentcontexts/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptndeploymentcontexts/status
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - keptn.sh
   resources:

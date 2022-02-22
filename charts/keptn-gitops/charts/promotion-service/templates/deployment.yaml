@@ -47,6 +47,16 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          {{ if .Values.secret_encryption_private_key }}
+          - name: RSA_PRIVATE_KEY
+            value: {{ .Values.secret_encryption_private_key }}
+          {{ else }}
+          {{ if .Values.global.rsaSecret.secretName }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.global.rsaSecret.secretName }}
+          {{ end }}
+          {{ end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
         - name: distributor

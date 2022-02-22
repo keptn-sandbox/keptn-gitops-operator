@@ -1,5 +1,6 @@
 #!/bin/bash
-# shellcheck disable=SC2181
+
+set -eu
 
 VERSION=$1 # e.g., 0.7.2-next.0
 APP_VERSION=$2 # e.g., 0.7.2-next.0+1234
@@ -30,11 +31,13 @@ fi
 # replace "appVersion: latest" with "appVersion: $VERSION" in all Chart.yaml files
 find ./$CHART_DIR -name Chart.yaml -exec sed -i -- "s/appVersion: latest/appVersion: \"${APP_VERSION}\"/g" {} \;
 find ./$CHART_DIR -name Chart.yaml -exec sed -i -- "s/version: latest/version: \"${VERSION}\"/g" {} \;
-find ./$CHART_DIR -name values.yaml -exec sed -i -- "s/latest/${VERSION}  /g" {} \;
+find ./$CHART_DIR -name values.yaml -exec sed -i -- "s/latest/${APP_VERSION}  /g" {} \;
 
-if [[ -f "${IMAGE}/config/rbac/role.yaml" ]]; then
-  cat ${IMAGE}/config/rbac/role.yaml | sed "s/name\: manager-role/name\: \{\{ include \"${IMAGE}.serviceAccountName\" . \}\}-role/g" >> ${CHART_DIR}/templates/role.yaml
-fi
+for i in keptn-operator gitops-operator; do
+  if [[ -f "$i/config/rbac/role.yaml" ]]; then
+    cat $i/config/rbac/role.yaml | sed "s/name\: manager-role/name\: \{\{ include \"${i}.serviceAccountName\" . \}\}-role/g" > ${CHART_DIR}/charts/${i}/templates/role.yaml
+  fi
+done
 
 mkdir installer/
 
@@ -52,7 +55,7 @@ fi
 
 mv "${IMAGE}-${VERSION}.tgz" "installer/${IMAGE}-${VERSION}.tgz"
 #verify the chart
-helm template "installer/${IMAGE}-${VERSION}.tgz" --dry-run > /dev/null
+helm template "installer/${IMAGE}-${VERSION}.tgz" --dry-run --set global.rsaSecret.privateBase64="mytest123" > /dev/null
 
 if [ $? -ne 0 ]; then
   echo "::error Helm Chart for ${IMAGE} has templating errors -exiting"

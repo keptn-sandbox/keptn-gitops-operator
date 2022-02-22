@@ -1,64 +1,82 @@
-package git
+package utils
 
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	keptnutils "github.com/keptn/kubernetes-utils/pkg"
+	keptnv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/chart"
 	"io/ioutil"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
 )
 
-type GitCredentials struct {
-	User      string `json:"user,omitempty"`
-	Token     string `json:"token,omitempty"`
-	RemoteURI string `json:"remoteURI,omitempty"`
-}
-
 //go:generate moq -pkg githandler_mock -skip-ensure -out ../eventhandler/fake/githandler_mock.go . GitHandlerInterface
 type GitHandlerInterface interface {
-	GetGitSecret(project string, namespace string) (GitCredentials, error)
-	UpdateGitRepo(credentials GitCredentials, stage string, service string, version string) error
+	UpdateGitRepo(credentials *GitRepositoryConfig, stage string, service string, version string) error
 }
 
 type GitHandler struct {
 }
 
-func (gh *GitHandler) GetGitSecret(project string, namespace string) (GitCredentials, error) {
-	secret := GitCredentials{}
-	clientset, err := keptnutils.GetClientset(true)
+//GetUpstreamCredentials gets the KeptnProject Resource for the Project and reads the git credentials
+func GetUpstreamCredentials(project string, namespace string) (*GitRepositoryConfig, error) {
+	scheme := runtime.NewScheme()
+	_ = clientgoscheme.AddToScheme(scheme)
+	_ = keptnv1.AddToScheme(scheme)
+
+	kubeconfig := ctrl.GetConfigOrDie()
+
+	kubeclient, err := client.New(kubeconfig, client.Options{Scheme: scheme})
 	if err != nil {
-		return GitCredentials{}, err
+		log.Fatal(err)
 	}
 
-	gitSecret, err := clientset.CoreV1().Secrets(namespace).Get(context.TODO(), "git-credentials-"+project, metav1.GetOptions{})
-	if err != nil {
-		return GitCredentials{}, err
-	}
+	var keptnproject keptnv1.KeptnProject
+	err = kubeclient.Get(context.Background(), client.ObjectKey{
+		Namespace: namespace,
+		Name:      project,
+	}, &keptnproject)
 
-	err = json.Unmarshal(gitSecret.Data["git-credentials"], &secret)
-	if err != nil {
-		return GitCredentials{}, err
-	}
-	return secret, nil
+	return GetGitCredentials(keptnproject.Spec.Repository, keptnproject.Spec.Username, keptnproject.Spec.Password, keptnproject.Spec.DefaultBranch)
 }
 
-func (gh *GitHandler) UpdateGitRepo(credentials GitCredentials, stage string, service string, version string) error {
+//GetGitCredentials creates a unified struct for git credentials
+func GetGitCredentials(remoteURI, user, token string, branch string) (*GitRepositoryConfig, error) {
+	secret, err := DecryptSecret(token)
+	if err != nil {
+		return nil, err
+	}
+
+	if branch == "" {
+		branch = "main"
+	}
+
+	return &GitRepositoryConfig{
+		RemoteURI: remoteURI,
+		User:      user,
+		Token:     secret,
+		Branch:    branch,
+	}, nil
+}
+
+//UpdateGitRepo updates the upstream repository
+func (gh *GitHandler) UpdateGitRepo(credentials *GitRepositoryConfig, stage string, service string, version string) error {
 	authentication := &http.BasicAuth{
 		Username: credentials.User,
 		Password: credentials.Token,

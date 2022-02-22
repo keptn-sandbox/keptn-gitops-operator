@@ -1,4 +1,4 @@
-package common
+package utils
 
 import (
 	"crypto/rand"
@@ -12,16 +12,14 @@ import (
 	"strings"
 )
 
-func decryptSecret(secret string) (string, error) {
+//DecryptSecret decrypts a given secret, returns the string if only a plaintext secre is given
+func DecryptSecret(secret string) (string, error) {
 	data := strings.Split(secret, ":")
 
 	if data[0] == "rsa" {
 		pemPrivate, ok := os.LookupEnv("RSA_PRIVATE_KEY")
 		if !ok {
 			return "", fmt.Errorf("environment variable RSA_PRIVATE_KEY is not set, will not be able to decrypt secrets")
-		}
-		if pemPrivate == "" {
-			return "", fmt.Errorf("RSA_PRIVATE_KEY is empty, will not be able to decrypt secrets")
 		}
 
 		secret, err := decryptPrivatePEM(data[1], pemPrivate)

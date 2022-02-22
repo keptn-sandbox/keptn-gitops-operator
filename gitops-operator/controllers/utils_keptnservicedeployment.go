@@ -11,6 +11,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+//+kubebuilder:rbac:groups=keptn.sh,resources=keptnservicedeployments,verbs=get;list;create;update;watch
+
 func (r *KeptnGitRepositoryReconciler) checkCreateServiceDeployment(ctx context.Context, repo gitopsv1.KeptnGitRepository, serviceDeployment keptnv1.KeptnServiceDeployment) (error, bool) {
 	found := &keptnv1.KeptnServiceDeployment{}
 

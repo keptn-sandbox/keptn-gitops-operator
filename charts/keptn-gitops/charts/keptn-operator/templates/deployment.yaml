@@ -35,9 +35,17 @@ spec:
         command:
         - /manager
         image: {{ .Values.image }}
+        {{ if .Values.global.rsaSecret.secretName }}
+        envFrom:
+          - secretRef:
+              name: {{ .Values.global.rsaSecret.secretName }}
+              {{ else }}
         env:
+        {{ if .Values.secret_encryption_private_key }}
           - name: RSA_PRIVATE_KEY
-            value: {{ .Values.secret_encryption_private_key}}
+            value: {{ .Values.secret_encryption_private_key }}
+            {{ end }}
+            {{ end }}
         livenessProbe:
           httpGet:
             path: /healthz

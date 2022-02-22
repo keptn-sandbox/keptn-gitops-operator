@@ -4,9 +4,16 @@
 package githandler_mock
 
 import (
-	"github.com/keptn-sandbox/keptn-git-toolbox/promotion-service/git"
+	"github.com/keptn-sandbox/keptn-gitops-operator/promotion-service/pkg/utils"
 	"sync"
 )
+
+type GitRepositoryConfig struct {
+	RemoteURI string
+	User      string
+	Token     string
+	Branch    string
+}
 
 // GitHandlerInterfaceMock is a mock implementation of git.GitHandlerInterface.
 //
@@ -28,10 +35,10 @@ import (
 // 	}
 type GitHandlerInterfaceMock struct {
 	// GetGitSecretFunc mocks the GetGitSecret method.
-	GetGitSecretFunc func(project string, namespace string) (git.GitCredentials, error)
+	GetGitSecretFunc func(project string, namespace string) (utils.GitRepositoryConfig, error)
 
 	// UpdateGitRepoFunc mocks the UpdateGitRepo method.
-	UpdateGitRepoFunc func(credentials git.GitCredentials, stage string, service string, version string) error
+	UpdateGitRepoFunc func(credentials *GitRepositoryConfig, stage string, service string, version string) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -45,7 +52,7 @@ type GitHandlerInterfaceMock struct {
 		// UpdateGitRepo holds details about calls to the UpdateGitRepo method.
 		UpdateGitRepo []struct {
 			// Credentials is the credentials argument value.
-			Credentials git.GitCredentials
+			Credentials utils.GitRepositoryConfig
 			// Stage is the stage argument value.
 			Stage string
 			// Service is the service argument value.
@@ -59,7 +66,7 @@ type GitHandlerInterfaceMock struct {
 }
 
 // GetGitSecret calls GetGitSecretFunc.
-func (mock *GitHandlerInterfaceMock) GetGitSecret(project string, namespace string) (git.GitCredentials, error) {
+func (mock *GitHandlerInterfaceMock) GetGitSecret(project string, namespace string) (utils.GitRepositoryConfig, error) {
 	if mock.GetGitSecretFunc == nil {
 		panic("GitHandlerInterfaceMock.GetGitSecretFunc: method is nil but GitHandlerInterface.GetGitSecret was just called")
 	}
@@ -93,18 +100,20 @@ func (mock *GitHandlerInterfaceMock) GetGitSecretCalls() []struct {
 	return calls
 }
 
+// TO BE REFINED
+/*
 // UpdateGitRepo calls UpdateGitRepoFunc.
-func (mock *GitHandlerInterfaceMock) UpdateGitRepo(credentials git.GitCredentials, stage string, service string, version string) error {
+func (mock *GitHandlerInterfaceMock) UpdateGitRepo(credentials *GitRepositoryConfig, stage string, service string, version string) error {
 	if mock.UpdateGitRepoFunc == nil {
 		panic("GitHandlerInterfaceMock.UpdateGitRepoFunc: method is nil but GitHandlerInterface.UpdateGitRepo was just called")
 	}
 	callInfo := struct {
-		Credentials git.GitCredentials
+		Credentials GitRepositoryConfig
 		Stage       string
 		Service     string
 		Version     string
 	}{
-		Credentials: credentials,
+		Credentials: *credentials,
 		Stage:       stage,
 		Service:     service,
 		Version:     version,
@@ -119,13 +128,13 @@ func (mock *GitHandlerInterfaceMock) UpdateGitRepo(credentials git.GitCredential
 // Check the length with:
 //     len(mockedGitHandlerInterface.UpdateGitRepoCalls())
 func (mock *GitHandlerInterfaceMock) UpdateGitRepoCalls() []struct {
-	Credentials git.GitCredentials
+	Credentials *GitRepositoryConfig
 	Stage       string
 	Service     string
 	Version     string
 } {
 	var calls []struct {
-		Credentials git.GitCredentials
+		Credentials *GitRepositoryConfig
 		Stage       string
 		Service     string
 		Version     string
@@ -134,4 +143,6 @@ func (mock *GitHandlerInterfaceMock) UpdateGitRepoCalls() []struct {
 	calls = mock.calls.UpdateGitRepo
 	mock.lockUpdateGitRepo.RUnlock()
 	return calls
+
 }
+*/

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	cloudevents "github.com/cloudevents/sdk-go/v2" // make sure to use v2 cloudevents here
-	"github.com/keptn-sandbox/keptn-git-toolbox/promotion-service/common"
-	"github.com/keptn-sandbox/keptn-git-toolbox/promotion-service/git"
+	"github.com/keptn-sandbox/keptn-gitops-operator/promotion-service/common"
+	"github.com/keptn-sandbox/keptn-gitops-operator/promotion-service/pkg/utils"
 	keptnv2 "github.com/keptn/go-utils/pkg/lib/v0_2_0"
 )
 
@@ -19,7 +19,7 @@ const (
 type PromotionHandler struct {
 	Event        cloudevents.Event
 	KeptnHandler *keptnv2.Keptn
-	GitHandler   git.GitHandlerInterface
+	GitHandler   utils.GitHandlerInterface
 }
 
 // HandlePromotionTriggeredEvent handles promotion.triggered events
@@ -54,7 +54,8 @@ func (eh *PromotionHandler) HandlePromotionTriggeredEvent() error {
 	}
 
 	namespaceSupplier := common.EnvBasedStringSupplier(namespaceEnvVarName, defaultNamespace)
-	mysecret, err := eh.GitHandler.GetGitSecret(eventData.Project, namespaceSupplier())
+
+	mysecret, err := utils.GetUpstreamCredentials(eventData.Project, namespaceSupplier())
 	if err != nil {
 		eh.KeptnHandler.Logger.Error(fmt.Sprintf("Could not fetch the secret for project %v: %v", eventData.Project, err.Error()))
 		sendErr := eh.sendPromotionFinishedWithErrorEvent(err.Error())
