@@ -76,7 +76,7 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	r.KeptnInstance, r.KeptnToken, err = utils.GetKeptnInstance(ctx, r.Client, req.Namespace)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not get Keptn Instance")
-		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, nil
+		return r.finishReconcile(err, false)
 	}
 
 	keptnproject := &apiv1.KeptnProject{}
@@ -85,10 +85,10 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		if errors.IsNotFound(err) {
 			// taking down all associated K8s resources is handled by K8s
 			r.ReqLogger.Info("KeptnProject resource not found. Ignoring since object must be deleted")
-			return ctrl.Result{Requeue: true}, nil
+			return r.finishReconcile(nil, false)
 		}
 		r.ReqLogger.Error(err, "Failed to get the KeptnProject")
-		return ctrl.Result{}, err
+		return r.finishReconcile(err, false)
 	}
 
 	myFinalizerName := "keptnprojects.keptn.sh/finalizer"
@@ -101,7 +101,7 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		if !utils.ContainsString(keptnproject.GetFinalizers(), myFinalizerName) {
 			controllerutil.AddFinalizer(keptnproject, myFinalizerName)
 			if err := r.Update(ctx, keptnproject); err != nil {
-				return ctrl.Result{}, err
+				return r.finishReconcile(err, false)
 			}
 		}
 	} else {
@@ -122,7 +122,7 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 
 		// Stop reconciliation as the item is being deleted
-		return ctrl.Result{}, nil
+		return r.finishReconcile(err, false)
 	}
 
 	projectExists, err := utils.CheckKeptnProjectExists(ctx, req, r.Client, keptnproject.Name)
@@ -133,14 +133,14 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			err := r.Client.Status().Update(ctx, keptnproject)
 			if err != nil {
 				r.ReqLogger.Error(err, "Could not update status of project "+keptnproject.Name)
-				return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
+				return r.finishReconcile(err, false)
 			}
-			return ctrl.Result{Requeue: true}, nil
+			return r.finishReconcile(nil, true)
 		}
 		err := r.createProject(keptnproject)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not create project")
-			return ctrl.Result{RequeueAfter: reconcileErrorInterval}, err
+			return r.finishReconcile(err, false)
 		}
 		return ctrl.Result{RequeueAfter: reconcileErrorInterval}, nil
 	} else if !keptnproject.Status.ProjectExists {
@@ -148,15 +148,15 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		err := r.Client.Status().Update(ctx, keptnproject)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of project "+keptnproject.Name)
-			return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
+			return r.finishReconcile(err, false)
 		}
-		return ctrl.Result{Requeue: true}, nil
+		return r.finishReconcile(err, true)
 	}
 
 	shipyard, err := utils.CreateShipyard(ctx, r.Client, keptnproject.Name)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not create shipyard")
-		return ctrl.Result{RequeueAfter: reconcileErrorInterval}, err
+		return r.finishReconcile(err, false)
 	}
 
 	shipyardPresent, shipyardHash := utils.CheckKeptnShipyard(ctx, req, r.Client, keptnproject.Name)
@@ -167,24 +167,25 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		err := controllerutil.SetControllerReference(keptnproject, &shipyard, r.Scheme)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not set controller reference")
+			return r.finishReconcile(err, false)
 		}
 
 		err = r.Client.Create(ctx, &shipyard)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not create shipyard")
-			return ctrl.Result{RequeueAfter: reconcileErrorInterval}, err
+			return r.finishReconcile(err, false)
 		}
-		return ctrl.Result{RequeueAfter: reconcileErrorInterval, Requeue: true}, nil
+		return r.finishReconcile(nil, true)
 	}
 
 	err = utils.UpdateShipyard(ctx, r.Client, shipyard, shipyardHash, req.Namespace)
 	if err != nil {
 		r.ReqLogger.Error(err, "Could not update shipyard")
-		return ctrl.Result{RequeueAfter: reconcileErrorInterval}, nil
+		return r.finishReconcile(err, false)
 	}
 
 	r.ReqLogger.Info("Finished Reconciling KeptnProject")
-	return ctrl.Result{RequeueAfter: reconcileSuccessInterval}, nil
+	return r.finishReconcile(nil, false)
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -257,4 +258,19 @@ func (r *KeptnProjectReconciler) createProject(project *apiv1.KeptnProject) erro
 		return fmt.Errorf("could not create project %v: %v", project.Name, err)
 	}
 	return err
+}
+
+func (r *KeptnProjectReconciler) finishReconcile(err error, requeueImmediate bool) (ctrl.Result, error) {
+	if err != nil {
+		interval := reconcileErrorInterval
+		if requeueImmediate {
+			interval = 0
+		}
+		return ctrl.Result{RequeueAfter: interval}, err
+	}
+	interval := reconcileSuccessInterval
+	if requeueImmediate {
+		interval = 0
+	}
+	return ctrl.Result{RequeueAfter: interval}, nil
 }
