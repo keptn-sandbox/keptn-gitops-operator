@@ -135,6 +135,7 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 				r.ReqLogger.Error(err, "Could not update status of project "+keptnproject.Name)
 				return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
 			}
+			return ctrl.Result{Requeue: true}, nil
 		}
 		err := r.createProject(keptnproject)
 		if err != nil {
