@@ -37,6 +37,7 @@ type KeptnProjectSpec struct {
 
 // KeptnProjectStatus defines the observed state of KeptnProject
 type KeptnProjectStatus struct {
+	ProjectExists bool `json:"projectExists,omitempty"`
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 }

@@ -29,10 +29,10 @@ func (r *KeptnGitRepositoryReconciler) checkCreateStage(ctx context.Context, rep
 
 	err = r.Client.Get(ctx, types.NamespacedName{Name: stage.ObjectMeta.Name, Namespace: repo.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		r.Log.Info("Creating a new Project", "Project.Namespace", repo.Namespace, "Project.Name", stage.Name)
+		r.Log.Info("Creating a new KeptnStage", "KeptnStage.Namespace", repo.Namespace, "KeptnStage.Name", stage.Name)
 		err = r.Client.Create(ctx, &stage)
 		if err != nil {
-			r.Log.Error(err, "Failed to create new Stage", "Stage.Namespace", repo.Namespace, "Stage.Name", stage.Name)
+			r.Log.Error(err, "Failed to create new Stage", "KeptnStage.Namespace", repo.Namespace, "KeptnStage.Name", stage.Name)
 			return err, false
 		}
 		return nil, true
@@ -63,11 +63,11 @@ func (r *KeptnGitRepositoryReconciler) reconcileStage(ctx context.Context, repo 
 
 		err := r.Client.Update(ctx, obj)
 		if err != nil {
-			r.Log.Error(err, "Failed to update Stage", "Stage.Namespace", obj.Namespace, "Stage.Name", obj.Name)
+			r.Log.Error(err, "Failed to update KeptnStage", "KeptnStage.Namespace", obj.Namespace, "KeptnStage.Name", obj.Name)
 			return err
 		} else {
 			r.Recorder.Event(&repo, "Normal", "Updated", fmt.Sprintf("Updated stage %s/%s (Reason: Stage changed)", stage.Namespace, stage.Name))
-			r.Log.Info("Project updated")
+			r.Log.Info("KeptnStage updated")
 		}
 	}
 	return nil

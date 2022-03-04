@@ -61,7 +61,7 @@ func (r *KeptnGitRepositoryReconciler) reconcileInstance(ctx context.Context, re
 			return err
 		}
 		r.Recorder.Event(&repo, "Normal", "Updated", fmt.Sprintf("Updated instance %s/%s (Reason: Instance changed)", instance.Namespace, instance.Name))
-		r.Log.Info("Project updated")
+		r.Log.Info("KeptnInstance updated")
 
 	}
 	return nil

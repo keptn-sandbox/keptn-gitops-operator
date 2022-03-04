@@ -127,12 +127,29 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	projectExists, err := utils.CheckKeptnProjectExists(ctx, req, r.Client, keptnproject.Name)
 	if !projectExists {
+		if keptnproject.Status.ProjectExists {
+			r.Recorder.Event(keptnproject, "Warning", "KeptnProjectNotFound", fmt.Sprintf("Keptn project %s does not exist in Keptn", keptnproject.Name))
+			keptnproject.Status.ProjectExists = false
+			err := r.Client.Status().Update(ctx, keptnproject)
+			if err != nil {
+				r.ReqLogger.Error(err, "Could not update status of project "+keptnproject.Name)
+				return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
+			}
+		}
 		err := r.createProject(keptnproject)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not create project")
 			return ctrl.Result{RequeueAfter: reconcileErrorInterval}, err
 		}
 		return ctrl.Result{RequeueAfter: reconcileErrorInterval}, nil
+	} else if !keptnproject.Status.ProjectExists {
+		keptnproject.Status.ProjectExists = true
+		err := r.Client.Status().Update(ctx, keptnproject)
+		if err != nil {
+			r.ReqLogger.Error(err, "Could not update status of project "+keptnproject.Name)
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, err
+		}
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	shipyard, err := utils.CreateShipyard(ctx, r.Client, keptnproject.Name)

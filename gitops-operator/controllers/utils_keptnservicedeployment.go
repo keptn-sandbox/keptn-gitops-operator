@@ -29,15 +29,15 @@ func (r *KeptnGitRepositoryReconciler) checkCreateServiceDeployment(ctx context.
 
 	err = r.Client.Get(ctx, types.NamespacedName{Name: serviceDeployment.ObjectMeta.Name, Namespace: repo.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		r.Log.Info("Creating a new Project", "ServiceDeployment.Namespace", repo.Namespace, "ServiceDeployment.Name", serviceDeployment.Name)
+		r.Log.Info("Creating a new KeptnServiceDeployment", "KeptnServiceDeployment.Namespace", repo.Namespace, "KeptnServiceDeployment.Name", serviceDeployment.Name)
 		err = r.Client.Create(ctx, &serviceDeployment)
 		if err != nil {
-			r.Log.Error(err, "Failed to create new Service Deployment", "ServiceDeployment.Namespace", repo.Namespace, "ServiceDeployment.Name", serviceDeployment.Name)
+			r.Log.Error(err, "Failed to create new KeptnServiceDeployment", "KeptnServiceDeployment.Namespace", repo.Namespace, "KeptnServiceDeployment.Name", serviceDeployment.Name)
 			return err, false
 		}
 		return nil, true
 	} else if err != nil {
-		r.Log.Error(err, "Failed to get Service Deployment")
+		r.Log.Error(err, "Failed to get KeptnServiceDeployment")
 		return err, false
 	}
 
@@ -63,11 +63,11 @@ func (r *KeptnGitRepositoryReconciler) reconcileServiceDeployment(ctx context.Co
 
 		err := r.Client.Update(ctx, obj)
 		if err != nil {
-			r.Log.Error(err, "Failed to update ServiceDeployment", "Project.Namespace", obj.Namespace, "Project.Name", obj.Name)
+			r.Log.Error(err, "Failed to update ServiceDeployment", "KeptnServiceDeployment.Namespace", obj.Namespace, "KeptnServiceDeployment.Name", obj.Name)
 			return err
 		} else {
-			r.Recorder.Event(&repo, "Normal", "Updated", fmt.Sprintf("Updated Service Deployment %s/%s (Reason: Service Deployment changed)", serviceDeployment.Namespace, serviceDeployment.Name))
-			r.Log.Info("Service Deployment updated")
+			r.Recorder.Event(&repo, "Normal", "Updated", fmt.Sprintf("Updated KeptnServiceDeployment %s/%s (Reason: KeptnServiceDeployment changed)", serviceDeployment.Namespace, serviceDeployment.Name))
+			r.Log.Info("KeptnServiceDeployment updated")
 		}
 	}
 	return nil

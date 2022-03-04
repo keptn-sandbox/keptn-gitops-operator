@@ -29,15 +29,15 @@ func (r *KeptnGitRepositoryReconciler) checkCreateSequence(ctx context.Context, 
 
 	err = r.Client.Get(ctx, types.NamespacedName{Name: sequence.ObjectMeta.Name, Namespace: repo.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		r.Log.Info("Creating a new Project", "Project.Namespace", repo.Namespace, "Project.Name", sequence.Name)
+		r.Log.Info("Creating a new KeptnSequence", "KeptnSequence.Namespace", repo.Namespace, "KeptnSequence.Name", sequence.Name)
 		err = r.Client.Create(ctx, &sequence)
 		if err != nil {
-			r.Log.Error(err, "Failed to create new Project", "Project.Namespace", repo.Namespace, "Service.Name", sequence.Name)
+			r.Log.Error(err, "Failed to create new KeptnSequence", "KeptnSequence.Namespace", repo.Namespace, "KeptnSequence.Name", sequence.Name)
 			return err, false
 		}
 		return nil, true
 	} else if err != nil {
-		r.Log.Error(err, "Failed to get Project")
+		r.Log.Error(err, "Failed to get KeptnSequence")
 		return err, false
 	}
 
@@ -63,11 +63,11 @@ func (r *KeptnGitRepositoryReconciler) reconcileSequence(ctx context.Context, re
 
 		err := r.Client.Update(ctx, obj)
 		if err != nil {
-			r.Log.Error(err, "Failed to update Project", "Sequence.Namespace", obj.Namespace, "Sequence.Name", obj.Name)
+			r.Log.Error(err, "Failed to update KeptnSequence", "Sequence.Namespace", obj.Namespace, "Sequence.Name", obj.Name)
 			return err
 		} else {
-			r.Recorder.Event(&repo, "Normal", "Updated", fmt.Sprintf("Updated sequence %s/%s (Reason: Project changed)", sequence.Namespace, sequence.Name))
-			r.Log.Info("Project updated")
+			r.Recorder.Event(&repo, "Normal", "Updated", fmt.Sprintf("Updated sequence %s/%s (Reason: KeptnSequence changed)", sequence.Namespace, sequence.Name))
+			r.Log.Info("KeptnSequence updated")
 		}
 	}
 	return nil
