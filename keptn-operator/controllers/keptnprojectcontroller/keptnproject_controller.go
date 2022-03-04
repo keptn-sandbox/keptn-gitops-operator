@@ -266,11 +266,13 @@ func (r *KeptnProjectReconciler) finishReconcile(err error, requeueImmediate boo
 		if requeueImmediate {
 			interval = 0
 		}
-		return ctrl.Result{RequeueAfter: interval}, err
+		r.ReqLogger.Error(err, "Finished Reconciling KeptnProject with error: %w")
+		return ctrl.Result{Requeue: true, RequeueAfter: interval}, err
 	}
 	interval := reconcileSuccessInterval
 	if requeueImmediate {
 		interval = 0
 	}
-	return ctrl.Result{RequeueAfter: interval}, nil
+	r.ReqLogger.Info("Finished Reconciling KeptnProject")
+	return ctrl.Result{Requeue: true, RequeueAfter: interval}, nil
 }
