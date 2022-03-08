@@ -174,6 +174,9 @@ func (r *KeptnServiceReconciler) checkKeptnProject(ctx context.Context, req ctrl
 		return false
 	}
 
+	if !projectRes.Status.ProjectExists {
+		return false
+	}
 	return true
 }
 

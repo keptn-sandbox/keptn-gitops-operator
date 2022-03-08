@@ -8,7 +8,6 @@ import (
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptninstances,verbs=get;list;create;update;watch
@@ -22,12 +21,7 @@ func (r *KeptnGitRepositoryReconciler) checkCreateInstance(ctx context.Context, 
 		"keptn.sh/last-applied-hash": utils.GetHashStructure(instance.Spec),
 	}
 
-	err := controllerutil.SetControllerReference(&repo, &instance, r.Scheme)
-	if err != nil {
-		return false, fmt.Errorf("could not set controller reference: %w", err)
-	}
-
-	err = r.Client.Get(ctx, types.NamespacedName{Name: instance.ObjectMeta.Name, Namespace: repo.Namespace}, found)
+	err := r.Client.Get(ctx, types.NamespacedName{Name: instance.ObjectMeta.Name, Namespace: repo.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		r.Log.Info("Creating a new Instance", "Instance.Namespace", repo.Namespace, "Instance.Name", instance.Name)
 		err = r.Client.Create(ctx, &instance)
@@ -67,7 +61,7 @@ func (r *KeptnGitRepositoryReconciler) reconcileInstance(ctx context.Context, re
 			return err
 		}
 		r.Recorder.Event(&repo, "Normal", "Updated", fmt.Sprintf("Updated instance %s/%s (Reason: Instance changed)", instance.Namespace, instance.Name))
-		r.Log.Info("Project updated")
+		r.Log.Info("KeptnInstance updated")
 
 	}
 	return nil

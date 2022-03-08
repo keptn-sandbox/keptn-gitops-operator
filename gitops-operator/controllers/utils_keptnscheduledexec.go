@@ -29,10 +29,10 @@ func (r *KeptnGitRepositoryReconciler) checkCreateScheduledExecution(ctx context
 
 	err = r.Client.Get(ctx, types.NamespacedName{Name: scheduledExecution.ObjectMeta.Name, Namespace: repo.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		r.Log.Info("Creating a new Scheduled Execution", "ScheduledExec.Namespace", repo.Namespace, "ScheduledExec.Name", scheduledExecution.Name)
+		r.Log.Info("Creating a new ScheduledExecution", "ScheduledExec.Namespace", repo.Namespace, "ScheduledExec.Name", scheduledExecution.Name)
 		err = r.Client.Create(ctx, &scheduledExecution)
 		if err != nil {
-			r.Log.Error(err, "Failed to create new Project", "ScheduledExec.Namespace", repo.Namespace, "ScheduledExec.Name", scheduledExecution.Name)
+			r.Log.Error(err, "Failed to create new ScheduledExecution", "ScheduledExec.Namespace", repo.Namespace, "ScheduledExec.Name", scheduledExecution.Name)
 			return err, false
 		}
 		return nil, true
@@ -63,11 +63,11 @@ func (r *KeptnGitRepositoryReconciler) reconcileScheduledExecution(ctx context.C
 
 		err := r.Client.Update(ctx, obj)
 		if err != nil {
-			r.Log.Error(err, "Failed to update Project", "Sequence.Namespace", obj.Namespace, "Sequence.Name", obj.Name)
+			r.Log.Error(err, "Failed to update ScheduledExecution", "Sequence.Namespace", obj.Namespace, "Sequence.Name", obj.Name)
 			return err
 		} else {
 			r.Recorder.Event(&repo, "Normal", "Updated", fmt.Sprintf("Updated scheduledExecution %s/%s (Reason: scheduledExecution changed)", scheduledExecution.Namespace, scheduledExecution.Name))
-			r.Log.Info("Project updated")
+			r.Log.Info("ScheduledExecution updated")
 		}
 	}
 	return nil
