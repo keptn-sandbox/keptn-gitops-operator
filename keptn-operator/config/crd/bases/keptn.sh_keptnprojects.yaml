@@ -38,6 +38,8 @@ spec:
             properties:
               defaultBranch:
                 type: string
+              initialShipyard:
+                type: string
               password:
                 type: string
               repository:

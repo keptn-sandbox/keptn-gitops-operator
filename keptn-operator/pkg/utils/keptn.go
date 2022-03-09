@@ -62,10 +62,9 @@ func GetKeptnInstance(ctx context.Context, client client.Client, namespace strin
 
 //CheckKeptnProjectExists queries the keptn api if a project exists
 func CheckKeptnProjectExists(ctx context.Context, req ctrl.Request, clt client.Client, project string) (bool, error) {
-
 	instance, token, err := GetKeptnInstance(ctx, clt, req.Namespace)
 	if err != nil {
-
+		return false, err
 	}
 	projectsHandler := apiutils.NewAuthenticatedProjectHandler(instance.Spec.APIUrl, token, instance.Status.AuthHeader, nil, instance.Status.Scheme)
 
