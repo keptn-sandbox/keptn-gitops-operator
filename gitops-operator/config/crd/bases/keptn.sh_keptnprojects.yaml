@@ -37,6 +37,8 @@ spec:
             properties:
               defaultBranch:
                 type: string
+              initialShipyard:
+                type: string
               password:
                 type: string
               repository:
@@ -48,6 +50,9 @@ spec:
             type: object
           status:
             description: KeptnProjectStatus defines the observed state of KeptnProject
+            properties:
+              projectExists:
+                type: boolean
             type: object
         type: object
     served: true
