@@ -144,8 +144,10 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 		return ctrl.Result{RequeueAfter: reconcileErrorInterval}, nil
 	} else if !keptnproject.Status.ProjectExists {
+
 		keptnproject.Status.ProjectExists = true
-		err := r.Client.Status().Update(ctx, keptnproject)
+
+		err = r.Client.Status().Update(ctx, keptnproject)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of project "+keptnproject.Name)
 			return r.finishReconcile(err, false)
@@ -220,6 +222,7 @@ func (r *KeptnProjectReconciler) deleteKeptnProject(keptnproject *apiv1.KeptnPro
 }
 
 func (r *KeptnProjectReconciler) createProject(project *apiv1.KeptnProject) error {
+	var shipyard string
 	httpclient := nethttp.Client{
 		Timeout: 30 * time.Second,
 	}
@@ -230,11 +233,17 @@ func (r *KeptnProjectReconciler) createProject(project *apiv1.KeptnProject) erro
 		return err
 	}
 
+	if project.Spec.InitialShipyard == "" {
+		shipyard = "YXBpVmVyc2lvbjogInNwZWMua2VwdG4uc2gvMC4yLjAiCmtpbmQ6ICJTaGlweWFyZCIKbWV0YWRhdGE6CiAgbmFtZTogInBvZHRhdG8taGVhZCIKc3BlYzoKICBzdGFnZXM6CiAgICAtIG5hbWU6ICJkZXYiCiAgICAgIHNlcXVlbmNlczoKICAgICAgICAtIG5hbWU6ICJkdW1teSIKICAgICAgICAgIHRhc2tzOgogICAgICAgICAgICAtIG5hbWU6ICJkdW1teSIKICAgIC0gbmFtZTogImhhcmRlbmluZyIKICAgICAgc2VxdWVuY2VzOgogICAgICAgIC0gbmFtZTogImR1bW15IgogICAgICAgICAgdGFza3M6CiAgICAgICAgICAgIC0gbmFtZTogImR1bW15IgogICAgLSBuYW1lOiAicHJvZHVjdGlvbiIKICAgICAgc2VxdWVuY2VzOgogICAgICAgIC0gbmFtZTogImR1bW15IgogICAgICAgICAgdGFza3M6CiAgICAgICAgICAgIC0gbmFtZTogImR1bW15IgoK"
+	} else {
+		shipyard = project.Spec.InitialShipyard
+	}
+
 	data, _ := json.Marshal(map[string]string{
 		"gitRemoteURL": project.Spec.Repository,
 		"gitToken":     secret,
 		"gitUser":      project.Spec.Username,
-		"shipyard":     "YXBpVmVyc2lvbjogInNwZWMua2VwdG4uc2gvMC4yLjAiCmtpbmQ6ICJTaGlweWFyZCIKbWV0YWRhdGE6CiAgbmFtZTogInBvZHRhdG8taGVhZCIKc3BlYzoKICBzdGFnZXM6CiAgICAtIG5hbWU6ICJkZXYiCiAgICAgIHNlcXVlbmNlczoKICAgICAgICAtIG5hbWU6ICJkdW1teSIKICAgICAgICAgIHRhc2tzOgogICAgICAgICAgICAtIG5hbWU6ICJkdW1teSIKICAgIC0gbmFtZTogImhhcmRlbmluZyIKICAgICAgc2VxdWVuY2VzOgogICAgICAgIC0gbmFtZTogImR1bW15IgogICAgICAgICAgdGFza3M6CiAgICAgICAgICAgIC0gbmFtZTogImR1bW15IgogICAgLSBuYW1lOiAicHJvZHVjdGlvbiIKICAgICAgc2VxdWVuY2VzOgogICAgICAgIC0gbmFtZTogImR1bW15IgogICAgICAgICAgdGFza3M6CiAgICAgICAgICAgIC0gbmFtZTogImR1bW15IgoK",
+		"shipyard":     shipyard,
 		"name":         project.Name,
 	})
 

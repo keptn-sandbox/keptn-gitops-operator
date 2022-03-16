@@ -29,10 +29,11 @@ type KeptnProjectSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of KeptnProject. Edit keptnproject_types.go to remove/update
-	Repository    string `json:"repository,omitempty"`
-	Username      string `json:"username,omitempty"`
-	Password      string `json:"password,omitempty"`
-	DefaultBranch string `json:"defaultBranch,omitempty"`
+	Repository      string `json:"repository,omitempty"`
+	Username        string `json:"username,omitempty"`
+	Password        string `json:"password,omitempty"`
+	InitialShipyard string `json:"initialShipyard,omitempty"`
+	DefaultBranch   string `json:"defaultBranch,omitempty"`
 }
 
 // KeptnProjectStatus defines the observed state of KeptnProject
