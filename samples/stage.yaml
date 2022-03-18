@@ -7,17 +7,7 @@ spec:
   project: "podtato-head"
   sequence:
     - type: sequenceref
-      sequenceRef: podtatohead-delivery-dev
----
-apiVersion: "keptn.sh/v1"
-kind: "KeptnStage"
-metadata:
-  name: "dev-3"
-spec:
-  project: "podtato-head"
-  sequence:
-    - type: sequenceref
-      sequenceRef: podtatohead-delivery-dev
+      sequenceRef: "podtato-delivery-dev"
 ---
 apiVersion: "keptn.sh/v1"
 kind: "KeptnStage"
@@ -27,7 +17,7 @@ spec:
   project: "podtato-head"
   sequence:
     - type: sequenceref
-      sequenceRef: podtatohead-delivery-hardening
+      sequenceRef: "podtato-delivery-hardening"
 
 ---
 apiVersion: "keptn.sh/v1"
@@ -38,4 +28,4 @@ spec:
   project: "podtato-head"
   sequence:
     - type: sequenceref
-      sequenceRef: podtatohead-delivery-production
+      sequenceRef: "podtato-delivery-production"

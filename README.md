@@ -44,7 +44,7 @@ kubectl apply -f https://github.com/keptn-sandbox/keptn-gitops-operator/releases
 ```
 helm upgrade --install --atomic -n keptn keptn-gitops \
   https://github.com/keptn-sandbox/keptn-gitops-operator/releases/download/${GITOPS_VERSION}/keptn-gitops-${GITOPS_VERSION}.tgz \
-  --set global.rsaSecret.privateBase64="${RSA_PUBLIC_KEY}" \
+  --set global.rsaSecret.privateBase64="${RSA_PRIVATE_KEY}" \
   --set promotion-service.remoteControlPlane.enabled=true \
   --set promotion-service.remoteControlPlane.api.protocol="https" \
   --set promotion-service.remoteControlPlane.api.hostname="${API_HOSTNAME}" --set promotion-service.remoteControlPlane.api.token="${API_TOKEN}"
@@ -59,7 +59,7 @@ The operator introduces a set of custom resources to make keptn configurable via
 |     KeptnInstance      |          Configure a Keptn Instance           |          [./samples/instance.yaml](./samples/instance.yaml)          |
 |      KeptnProject      |           Configure a Keptn Project           |           [./samples/project.yaml](./samples/project.yaml)           |
 |      KeptnService      |           Configure a Keptn Service           |           [./samples/service.yaml](./samples/service.yaml)           |
-|     KeptnSequence      | Define a Keptn Sequence to be used in a Stage |          [./samples/sequence.yaml](./samples/sequence.yaml)          |
+|     KeptnSequence      | Define a Keptn Sequence to be used in a Stage |         [./samples/sequence.yaml](./samples/sequences.yaml)          |
 |       KeptnStage       |             Define a Keptn Stage              |             [./samples/stage.yaml](./samples/stage.yaml)             |
 | KeptnServiceDeployment |  Specifies the deployed version of a service  | [./samples/servicedeployment.yaml](./samples/servicedeployment.yaml) |
 

@@ -1,0 +1,9 @@
+apiVersion: "keptn.sh/v1"
+kind: "KeptnInstance"
+metadata:
+  name: "default"
+spec:
+  apiUrl: "https://<KEPTN-HOSTNAME>/api"
+  tokenType: "x-token"
+  apiToken: "rsa:<BASE64_ENCODED_AND_ENCRYPTED_API_TOKEN>"
+
