@@ -22,7 +22,13 @@ type DecryptionCmdParams struct {
 var decryptionParams *DecryptionCmdParams
 
 func (decryption *decryptionImpl) RunDecryption() error {
-	fmt.Println(decryptPrivatePEM(*decryptionParams.Secret, *decryptionParams.PrivateKey))
+	secret, err := decryptPrivatePEM(*decryptionParams.Secret, *decryptionParams.PrivateKey)
+	if err != nil {
+		return err
+	}
+	if !quiet {
+		fmt.Println(secret)
+	}
 	return nil
 }
 
@@ -32,8 +38,21 @@ func NewDecryptCmd(decryption Decryption) *cobra.Command {
 		Short: `Decrypts a secret using a given private key`,
 		Long:  `Decrypts a secret using a given private key`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_ = decryption.RunDecryption()
-
+			err := decryption.RunDecryption()
+			res := Result{}
+			if err != nil {
+				if jsonEnabled {
+					res.Message = err.Error()
+					res.Result = false
+					printJsonResult(res)
+				}
+				return err
+			}
+			if jsonEnabled {
+				res.Message = "The String has been encrypted successfully"
+				res.Result = true
+				printJsonResult(res)
+			}
 			return nil
 		},
 	}

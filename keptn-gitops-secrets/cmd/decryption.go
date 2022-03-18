@@ -35,7 +35,7 @@ func DecryptSecret(secret string) (string, error) {
 func decryptPrivatePEM(message string, keyfile string) (string, error) {
 	key, err := ioutil.ReadFile(keyfile) // just pass the file name
 	if err != nil {
-		fmt.Print(err)
+		return "", err
 	}
 
 	block, _ := pem.Decode(key)

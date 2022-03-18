@@ -20,6 +20,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
@@ -48,19 +49,19 @@ func GenerateKeys(filebase string) (private, public string) {
 
 	publicKey := &privateKey.PublicKey
 
-	privkey_bytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	privkeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
 	private = string(pem.EncodeToMemory(
 		&pem.Block{
 			Type:  "RSA PRIVATE KEY",
-			Bytes: privkey_bytes,
+			Bytes: privkeyBytes,
 		},
 	))
 
-	pubkey_bytes := x509.MarshalPKCS1PublicKey(publicKey)
+	pubkeyBytes := x509.MarshalPKCS1PublicKey(publicKey)
 	public = string(pem.EncodeToMemory(
 		&pem.Block{
 			Type:  "RSA PUBLIC KEY",
-			Bytes: pubkey_bytes,
+			Bytes: pubkeyBytes,
 		},
 	))
 	ioutil.WriteFile(filebase+".pub", []byte(public), 0644)
@@ -71,9 +72,10 @@ func GenerateKeys(filebase string) (private, public string) {
 func (keygeneration *keyGenerationImpl) RunKeyGeneration() error {
 	private, public := GenerateKeys(*keyGenerationParams.Basename)
 
-	fmt.Println("Private Key:\n" + base64.StdEncoding.EncodeToString([]byte(private)) + "\n")
-	fmt.Println("Public Key:\n" + base64.StdEncoding.EncodeToString([]byte(public)))
-
+	if !quiet {
+		fmt.Println("Private Key:\n" + base64.StdEncoding.EncodeToString([]byte(private)) + "\n")
+		fmt.Println("Public Key:\n" + base64.StdEncoding.EncodeToString([]byte(public)))
+	}
 	return nil
 }
 
@@ -83,8 +85,22 @@ func NewKeyGeneration(keyGeneration KeyGeneration) *cobra.Command {
 		Short: `Creates a new keypair`,
 		Long:  `Creates a new key pair`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_ = keyGeneration.RunKeyGeneration()
+			err := keyGeneration.RunKeyGeneration()
+			res := Result{}
 
+			if err != nil {
+				if jsonEnabled {
+					res.Message = err.Error()
+					res.Result = false
+					printJsonResult(res)
+				}
+				return err
+			}
+			if jsonEnabled {
+				res.Message = "The Key Pair has been generated"
+				res.Result = true
+				printJsonResult(res)
+			}
 			return nil
 		},
 	}
@@ -98,4 +114,9 @@ func init() {
 	keyGeneration := &keyGenerationImpl{}
 	keyGenerationCmd := NewKeyGeneration(keyGeneration)
 	rootCmd.AddCommand(keyGenerationCmd)
+}
+
+func printJsonResult(res Result) {
+	jsonData, _ := json.Marshal(res)
+	fmt.Println(string(jsonData))
 }
