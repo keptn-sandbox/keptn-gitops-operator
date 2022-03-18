@@ -28,6 +28,14 @@ import (
 )
 
 var cfgFile string
+var quiet bool
+var jsonEnabled bool
+
+//Result describes the type used for json output
+type Result struct {
+	Message string `json:"message"`
+	Result  bool   `json:"result"`
+}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -58,6 +66,8 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.secret-encrypt.yaml)")
+	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Suppresses outputs to stdout")
+	rootCmd.PersistentFlags().BoolVarP(&jsonEnabled, "json", "j", false, "Creates json result")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.

@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-
 //go:generate mockgen -source=triggerDeploy.go -destination=deployment_mock.go -package=cmd Deployment
 
 type Encryption interface {
@@ -18,13 +17,19 @@ type encryptionImpl struct {
 
 type EncryptionCmdParams struct {
 	PublicKey *string
-	Secret *string
+	Secret    *string
 }
 
 var encryptionParams *EncryptionCmdParams
 
 func (encryption *encryptionImpl) RunEncryption() error {
-	fmt.Println(EncryptPublicPEM( *encryptionParams.Secret, *encryptionParams.PublicKey))
+	secret, err := EncryptPublicPEM(*encryptionParams.Secret, *encryptionParams.PublicKey)
+	if err != nil {
+		return err
+	}
+	if !quiet {
+		fmt.Println(secret)
+	}
 	return nil
 }
 
@@ -32,10 +37,23 @@ func NewEncryptCmd(encryption Encryption) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "encrypt",
 		Short: `Encrypts a secret using a given public key`,
-		Long: `Encrypts a secret using a given public key`,
+		Long:  `Encrypts a secret using a given public key`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_ = encryption.RunEncryption()
-
+			err := encryption.RunEncryption()
+			res := Result{}
+			if err != nil {
+				if jsonEnabled {
+					res.Message = err.Error()
+					res.Result = false
+					printJsonResult(res)
+				}
+				return err
+			}
+			if jsonEnabled {
+				res.Message = "The String has been encrypted successfully"
+				res.Result = true
+				printJsonResult(res)
+			}
 			return nil
 		},
 	}
