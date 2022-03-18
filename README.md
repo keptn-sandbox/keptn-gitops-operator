@@ -44,7 +44,7 @@ kubectl apply -f https://github.com/keptn-sandbox/keptn-gitops-operator/releases
 ```
 helm upgrade --install --atomic -n keptn keptn-gitops \
   https://github.com/keptn-sandbox/keptn-gitops-operator/releases/download/${GITOPS_VERSION}/keptn-gitops-${GITOPS_VERSION}.tgz \
-  --set global.rsaSecret.privateBase64="${RSA_PUBLIC_KEY}" \
+  --set global.rsaSecret.privateBase64="${RSA_PRIVATE_KEY}" \
   --set promotion-service.remoteControlPlane.enabled=true \
   --set promotion-service.remoteControlPlane.api.protocol="https" \
   --set promotion-service.remoteControlPlane.api.hostname="${API_HOSTNAME}" --set promotion-service.remoteControlPlane.api.token="${API_TOKEN}"
