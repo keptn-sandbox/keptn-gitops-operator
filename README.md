@@ -59,7 +59,7 @@ The operator introduces a set of custom resources to make keptn configurable via
 |     KeptnInstance      |          Configure a Keptn Instance           |          [./samples/instance.yaml](./samples/instance.yaml)          |
 |      KeptnProject      |           Configure a Keptn Project           |           [./samples/project.yaml](./samples/project.yaml)           |
 |      KeptnService      |           Configure a Keptn Service           |           [./samples/service.yaml](./samples/service.yaml)           |
-|     KeptnSequence      | Define a Keptn Sequence to be used in a Stage |          [./samples/sequence.yaml](./samples/sequence.yaml)          |
+|     KeptnSequence      | Define a Keptn Sequence to be used in a Stage |         [./samples/sequence.yaml](./samples/sequences.yaml)          |
 |       KeptnStage       |             Define a Keptn Stage              |             [./samples/stage.yaml](./samples/stage.yaml)             |
 | KeptnServiceDeployment |  Specifies the deployed version of a service  | [./samples/servicedeployment.yaml](./samples/servicedeployment.yaml) |
 

@@ -1,61 +1,58 @@
 apiVersion: "keptn.sh/v1"
 kind: "KeptnSequence"
 metadata:
-  name: "podtatohead-delivery-dev"
+  name: "podtato-delivery-dev"
 spec:
   sequence:
     name: "artifact-delivery"
     tasks:
-    - name: "promotion"
-    - name: "deployment"
-      properties:
-        deploymentstrategy: "user_managed"
-    - name: "test"
-      properties:
-        teststrategy: "functional"
+      - name: "promotion"
+      - name: "monaco"
+      - name: "deployment"
+        properties:
+          deploymentstrategy: "user_managed"
+      - name: "test"
+      - name: "evaluation"
+        properties:
+          timeframe: "2m"
 
 ---
 apiVersion: "keptn.sh/v1"
 kind: "KeptnSequence"
 metadata:
-  name: "podtatohead-delivery-hardening"
+  name: "podtato-delivery-hardening"
 spec:
   sequence:
-      name: "artifact-delivery"
-      triggeredOn:
-        - event: "dev.artifact-delivery.finished"
-      tasks:
-        - name: approval
-          properties:
-            pass: manual
-            warning: manual
-        - name: "promotion"
-        - name: "deployment"
-          properties:
-            deploymentstrategy: "user_managed"
-        - name: "test"
-          properties:
-            teststrategy: "functional"
-
+    name: "artifact-delivery"
+    triggeredOn:
+      - event: "dev.artifact-delivery.finished"
+    tasks:
+      - name: "promotion"
+      - name: "monaco"
+      - name: "deployment"
+        properties:
+          deploymentstrategy: "user_managed"
+      - name: "test"
+      - name: "evaluation"
+        properties:
+          timeframe: "2m"
 ---
 apiVersion: "keptn.sh/v1"
 kind: "KeptnSequence"
 metadata:
-  name: "podtatohead-delivery-production"
+  name: "podtato-delivery-production"
 spec:
   sequence:
-      name: "artifact-delivery"
-      triggeredOn:
-        - event: "hardening.artifact-delivery.finished"
-      tasks:
-        - name: approval
-          properties:
-            pass: manual
-            warning: manual
-        - name: "promotion"
-        - name: "deployment"
-          properties:
-            deploymentstrategy: "user_managed"
-        - name: "test"
-          properties:
-            teststrategy: "functional"
+    name: "artifact-delivery"
+    triggeredOn:
+      - event: "hardening.artifact-delivery.finished"
+    tasks:
+      - name: "promotion"
+      - name: "monaco"
+      - name: "deployment"
+        properties:
+          deploymentstrategy: "user_managed"
+      - name: "test"
+      - name: "evaluation"
+        properties:
+          timeframe: "2m"

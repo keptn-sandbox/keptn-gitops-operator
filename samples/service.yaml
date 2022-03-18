@@ -1,7 +1,8 @@
----
 apiVersion: "keptn.sh/v1"
 kind: "KeptnService"
 metadata:
-  name: "main"
+  name: "podtatohead"
 spec:
   project: "podtato-head"
+  service: "podtatohead"
+  deploymentEvent: "artifact-delivery.triggered"
