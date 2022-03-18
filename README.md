@@ -65,7 +65,8 @@ The operator introduces a set of custom resources to make keptn configurable via
 
 ### Usage:
 * Create an empty upstream repository
-* Create a KeptnInstance Custom Resource according to the [sample](./samples/instance.yaml). You can specify the secret to your secret either in clear text or RSA as an RSA encrypted string (prefix this with rsa:)
+* Create a KeptnInstance Custom Resource according to the [sample](./samples/instance.yaml). You can specify the secret to your secret either in clear text or RSA as an RSA encrypted string (prefix this with rsa:) 
+  * Please note, that there can be only one Keptn Instance called "default" in one installation at the moment
 * Create a KeptnProject Custom Resource according to the [sample](./samples/project.yaml). You can specify the secret to your secret either in clear text or RSA as an RSA encrypted string (prefix this with rsa:)
 * Create your keptn services according to the [sample](./samples/service.yaml). Ensure that you added the correct project.
 * Create stages, and sequences. Ensure that you created the sequences you are referring to in the stage custom resources
