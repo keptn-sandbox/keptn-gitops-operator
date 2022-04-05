@@ -30,7 +30,7 @@ Following, a few parameters have to be set upfront:
 export API_HOSTNAME="<hostname>"
 export API_TOKEN="<api-token>"
 export RSA_PRIVATE_KEY="<private-key>"
-export GITOPS_VERSION="0.1.0-pre.5"
+export GITOPS_VERSION="0.1.0-pre.6"
 ```
 
 ### Install Custom Resource Definitions / Create Namespace
