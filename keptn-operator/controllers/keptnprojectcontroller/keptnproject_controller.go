@@ -128,9 +128,10 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	projectExists, err := utils.CheckKeptnProjectExists(ctx, req, r.Client, keptnproject.Name)
 	if !projectExists {
 		if keptnproject.Status.ProjectExists {
+			fmt.Println("Test 1")
 			r.Recorder.Event(keptnproject, "Warning", "KeptnProjectNotFound", fmt.Sprintf("Keptn project %s does not exist in Keptn", keptnproject.Name))
 			keptnproject.Status.ProjectExists = false
-			err := r.Client.Status().Update(ctx, keptnproject)
+			err := r.Status().Update(ctx, keptnproject)
 			if err != nil {
 				r.ReqLogger.Error(err, "Could not update status of project "+keptnproject.Name)
 				return r.finishReconcile(err, false)
@@ -147,7 +148,7 @@ func (r *KeptnProjectReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 		keptnproject.Status.ProjectExists = true
 
-		err = r.Client.Status().Update(ctx, keptnproject)
+		err = r.Status().Update(ctx, keptnproject)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of project "+keptnproject.Name)
 			return r.finishReconcile(err, false)

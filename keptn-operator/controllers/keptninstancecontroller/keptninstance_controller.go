@@ -65,7 +65,7 @@ const refreshInterval = 120 * time.Second
 func (r *KeptnInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
 	r.ReqLogger = ctrl.Log.WithValues("Request.Namespace", req.Namespace, "Request.Name", req.Name)
-	r.ReqLogger.Info("Reconciling KeptnSequenceExecution")
+	r.ReqLogger.Info("Reconciling KeptnInstance")
 
 	instance := &apiv1.KeptnInstance{}
 

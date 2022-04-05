@@ -53,6 +53,8 @@ type KeptnManifests struct {
 	instances          []keptnv1.KeptnInstance
 }
 
+const reconcileImmediateInterval = 1 * time.Second
+
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptngitrepositories,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptngitrepositories/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptngitrepositories/finalizers,verbs=update
@@ -129,7 +131,7 @@ func (r *KeptnGitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.R
 			r.Log.Error(err, "Failed to check or create instance")
 			return ctrl.Result{}, err
 		} else if created {
-			return ctrl.Result{Requeue: true}, nil
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileImmediateInterval}, nil
 		}
 	}
 
@@ -139,7 +141,7 @@ func (r *KeptnGitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.R
 			r.Log.Error(err, "Failed to check or create sequence")
 			return ctrl.Result{}, err
 		} else if created {
-			return ctrl.Result{Requeue: true}, nil
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileImmediateInterval}, nil
 		}
 	}
 
@@ -149,7 +151,7 @@ func (r *KeptnGitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.R
 			r.Log.Error(err, "Failed to check or create stage")
 			return ctrl.Result{}, err
 		} else if created {
-			return ctrl.Result{Requeue: true}, nil
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileImmediateInterval}, nil
 		}
 	}
 
@@ -159,7 +161,7 @@ func (r *KeptnGitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.R
 			r.Log.Error(err, "Failed to check or create project")
 			return ctrl.Result{}, err
 		} else if created {
-			return ctrl.Result{Requeue: true}, nil
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileImmediateInterval}, nil
 		}
 	}
 
@@ -174,7 +176,7 @@ func (r *KeptnGitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.R
 			r.Log.Error(err, "Failed to check or create service")
 			return ctrl.Result{}, err
 		} else if created {
-			return ctrl.Result{Requeue: true}, nil
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileImmediateInterval}, nil
 		}
 	}
 
@@ -184,7 +186,7 @@ func (r *KeptnGitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.R
 			r.Log.Error(err, "Failed to check or create sequence execution")
 			return ctrl.Result{}, err
 		} else if created {
-			return ctrl.Result{Requeue: true}, nil
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileImmediateInterval}, nil
 		}
 	}
 
@@ -194,7 +196,7 @@ func (r *KeptnGitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.R
 			r.Log.Error(err, "Failed to check or create service deployment")
 			return ctrl.Result{}, err
 		} else if created {
-			return ctrl.Result{Requeue: true}, nil
+			return ctrl.Result{Requeue: true, RequeueAfter: reconcileImmediateInterval}, nil
 		}
 	}
 
