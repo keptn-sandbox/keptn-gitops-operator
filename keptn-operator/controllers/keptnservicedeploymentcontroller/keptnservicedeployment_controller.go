@@ -25,6 +25,7 @@ import (
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
 	"github.com/keptn/go-utils/pkg/api/models"
 	apiutils "github.com/keptn/go-utils/pkg/api/utils"
+	"gopkg.in/yaml.v3"
 	"io"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -167,6 +168,10 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 	}
 
 	if keptncontext.Status.LastAppliedHash[ksd.Spec.Stage] != utils.GetHashStructure(ksd.Spec) || ksd.Status.UpdatePending {
+		out, err := yaml.Marshal(&ksd.Spec)
+		fmt.Println(keptncontext.Status.LastAppliedHash[ksd.Spec.Stage])
+		fmt.Println(utils.GetHashStructure(ksd.Spec))
+		fmt.Println(string(out))
 		kcontext, err := r.triggerTask(ksd, service.Spec.DeploymentEvent, keptncontext.Status.KeptnContext)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not trigger task")
@@ -174,7 +179,7 @@ func (r *KeptnServiceDeploymentReconciler) Reconcile(ctx context.Context, req ct
 		}
 		keptncontext.Status.KeptnContext = kcontext
 		keptncontext.Status.LastAppliedHash[ksd.Spec.Stage] = utils.GetHashStructure(ksd.Spec)
-		err = r.Client.Status().Update(ctx, keptncontext)
+		err = r.Status().Update(ctx, keptncontext)
 		if err != nil {
 			r.ReqLogger.Error(err, "Could not update status of ksd "+ksd.Name)
 		}
@@ -262,8 +267,9 @@ func getKeptnContext(client client.Client, ctx context.Context, namespace string
 }
 
 func (r *KeptnServiceDeploymentReconciler) triggerTask(deployment *apiv1.KeptnServiceDeployment, deploymentEvent string, shkeptncontext string) (string, error) {
-	if deployment.Spec.ConfigVersion == "" {
-		deployment.Spec.ConfigVersion = "0"
+	configVersion := "0"
+	if deployment.Spec.ConfigVersion != "" {
+		configVersion = deployment.Spec.ConfigVersion
 	}
 
 	httpclient := nethttp.Client{
@@ -278,7 +284,7 @@ func (r *KeptnServiceDeploymentReconciler) triggerTask(deployment *apiv1.KeptnSe
 			Stage:   deployment.Spec.Stage,
 			Labels: map[string]string{
 				"version":       deployment.Spec.Version,
-				"configVersion": deployment.Spec.ConfigVersion,
+				"configVersion": configVersion,
 			},
 			Image: deployment.Spec.Service + ":" + deployment.Spec.Version,
 		},

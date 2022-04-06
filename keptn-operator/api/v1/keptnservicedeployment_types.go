@@ -31,7 +31,7 @@ type KeptnServiceDeploymentSpec struct {
 	Service          string `json:"service"`
 	Stage            string `json:"stage"`
 	Version          string `json:"version"`
-	ConfigVersion    string `json:"configVersion"`
+	ConfigVersion    string `json:"configVersion,omitempty"`
 	Author           string `json:"author,omitempty"`
 	SourceCommitHash string `json:"sourceCommitHash,omitempty"`
 }
