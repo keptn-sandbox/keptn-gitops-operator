@@ -31,18 +31,20 @@ type KeptnServiceDeploymentSpec struct {
 	Service          string `json:"service"`
 	Stage            string `json:"stage"`
 	Version          string `json:"version"`
+	ConfigVersion    string `json:"configVersion"`
 	Author           string `json:"author,omitempty"`
 	SourceCommitHash string `json:"sourceCommitHash,omitempty"`
 }
 
 // KeptnServiceDeploymentStatus defines the observed state of KeptnServiceDeployment
 type KeptnServiceDeploymentStatus struct {
-	DeployedVersion    string                              `json:"deployedVersion,omitempty"`
-	UpdatePending      bool                                `json:"updatePending,omitempty"`
-	KeptnContext       string                              `json:"keptnContext,omitempty"`
-	LastAppliedHash    string                              `json:"lastAppliedHash,omitempty"`
-	Prerequisites      KeptnServiceDeploymentPrerequisites `json:"prerequisites,omitempty"`
-	DeploymentProgress KeptnServiceDeploymentProgress      `json:"progress,omitempty"`
+	DeployedVersion       string                              `json:"deployedVersion,omitempty"`
+	DeployedConfigVersion string                              `json:"deployedConfigVersion,omitempty"`
+	UpdatePending         bool                                `json:"updatePending,omitempty"`
+	KeptnContext          string                              `json:"keptnContext,omitempty"`
+	LastAppliedHash       string                              `json:"lastAppliedHash,omitempty"`
+	Prerequisites         KeptnServiceDeploymentPrerequisites `json:"prerequisites,omitempty"`
+	DeploymentProgress    KeptnServiceDeploymentProgress      `json:"progress,omitempty"`
 }
 
 //KeptnServiceDeploymentPrerequisites defines all of the objects needed to deploy a service

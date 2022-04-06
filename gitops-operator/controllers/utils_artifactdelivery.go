@@ -36,7 +36,10 @@ func (r *KeptnGitRepositoryReconciler) composeData(gitClient common.GitClient, t
 	// Copy the Base Directory
 
 	for service, metadata := range services {
-		tag := service.DirectoryName + "-" + metadata.Version
+		if metadata.ConfigVersion == "" {
+			metadata.ConfigVersion = "0"
+		}
+		tag := service.DirectoryName + "-" + metadata.Version + "-" + metadata.ConfigVersion
 
 		err := gitClient.TagExists(tag)
 		if err != nil {

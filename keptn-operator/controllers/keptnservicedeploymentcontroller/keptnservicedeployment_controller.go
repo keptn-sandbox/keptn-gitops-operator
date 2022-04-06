@@ -262,6 +262,9 @@ func getKeptnContext(client client.Client, ctx context.Context, namespace string
 }
 
 func (r *KeptnServiceDeploymentReconciler) triggerTask(deployment *apiv1.KeptnServiceDeployment, deploymentEvent string, shkeptncontext string) (string, error) {
+	if deployment.Spec.ConfigVersion == "" {
+		deployment.Spec.ConfigVersion = "0"
+	}
 
 	httpclient := nethttp.Client{
 		Timeout: 30 * time.Second,
@@ -274,9 +277,8 @@ func (r *KeptnServiceDeploymentReconciler) triggerTask(deployment *apiv1.KeptnSe
 			Project: deployment.Spec.Project,
 			Stage:   deployment.Spec.Stage,
 			Labels: map[string]string{
-				"version":          deployment.Spec.Version,
-				"author":           deployment.Spec.Author,
-				"sourceCommitHash": deployment.Spec.SourceCommitHash,
+				"version":       deployment.Spec.Version,
+				"configVersion": deployment.Spec.ConfigVersion,
 			},
 			Image: deployment.Spec.Service + ":" + deployment.Spec.Version,
 		},
