@@ -27,13 +27,14 @@ import (
 type KeptnServiceDeploymentSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Project          string `json:"project"`
-	Service          string `json:"service"`
-	Stage            string `json:"stage"`
-	Version          string `json:"version"`
-	ConfigVersion    string `json:"configVersion,omitempty"`
-	Author           string `json:"author,omitempty"`
-	SourceCommitHash string `json:"sourceCommitHash,omitempty"`
+	Project          string            `json:"project"`
+	Service          string            `json:"service"`
+	Stage            string            `json:"stage"`
+	Version          string            `json:"version"`
+	ConfigVersion    string            `json:"configVersion,omitempty"`
+	Author           string            `json:"author,omitempty"`
+	SourceCommitHash string            `json:"sourceCommitHash,omitempty"`
+	Labels           map[string]string `json:"labels,omitempty"`
 }
 
 // KeptnServiceDeploymentStatus defines the observed state of KeptnServiceDeployment

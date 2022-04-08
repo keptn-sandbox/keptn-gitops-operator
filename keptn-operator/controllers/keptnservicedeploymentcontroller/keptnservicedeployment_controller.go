@@ -268,8 +268,20 @@ func getKeptnContext(client client.Client, ctx context.Context, namespace string
 
 func (r *KeptnServiceDeploymentReconciler) triggerTask(deployment *apiv1.KeptnServiceDeployment, deploymentEvent string, shkeptncontext string) (string, error) {
 	configVersion := "0"
+
 	if deployment.Spec.ConfigVersion != "" {
 		configVersion = deployment.Spec.ConfigVersion
+	}
+
+	labels := map[string]string{
+		"version":       deployment.Spec.Version,
+		"configVersion": configVersion,
+	}
+
+	if len(deployment.Spec.Labels) != 0 {
+		for key, value := range deployment.Spec.Labels {
+			labels[key] = value
+		}
 	}
 
 	httpclient := nethttp.Client{
@@ -282,11 +294,8 @@ func (r *KeptnServiceDeploymentReconciler) triggerTask(deployment *apiv1.KeptnSe
 			Service: deployment.Spec.Service,
 			Project: deployment.Spec.Project,
 			Stage:   deployment.Spec.Stage,
-			Labels: map[string]string{
-				"version":       deployment.Spec.Version,
-				"configVersion": configVersion,
-			},
-			Image: deployment.Spec.Service + ":" + deployment.Spec.Version,
+			Labels:  labels,
+			Image:   deployment.Spec.Service + ":" + deployment.Spec.Version,
 		},
 		Source:      "Keptn GitOps Operator",
 		SpecVersion: "1.0",
