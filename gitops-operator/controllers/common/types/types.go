@@ -30,10 +30,11 @@ type KeptnArtifactMetadata struct {
 
 //KeptnArtifactMetadataSpec specifies details of service artifacts
 type KeptnArtifactMetadataSpec struct {
-	Version      string `json:"version,omitempty"`
-	ChartDir     string `json:"chartDir,omitempty"`
-	OverwriteTag bool   `json:"overwriteTag,omitempty"`
-	Project      string `json:"project"`
+	Version       string `yaml:"version,omitempty"`
+	ConfigVersion string `yaml:"configVersion,omitempty"`
+	ChartDir      string `yaml:"chartDir,omitempty"`
+	OverwriteTag  bool   `yaml:"overwriteTag,omitempty"`
+	Project       string `yaml:"project"`
 }
 
 type configurationData struct {

@@ -28,7 +28,7 @@ import (
 
 //go:generate moq -pkg githandler_mock -skip-ensure -out ../eventhandler/fake/githandler_mock.go . GitHandlerInterface
 type GitHandlerInterface interface {
-	UpdateGitRepo(credentials *GitRepositoryConfig, stage string, service string, version string) error
+	UpdateGitRepo(credentials *GitRepositoryConfig, stage string, service string, version string, configVersion string) error
 }
 
 type GitHandler struct {
@@ -76,7 +76,7 @@ func GetGitCredentials(remoteURI, user, token string, branch string) (*GitReposi
 }
 
 //UpdateGitRepo updates the upstream repository
-func (gh *GitHandler) UpdateGitRepo(credentials *GitRepositoryConfig, stage string, service string, version string) error {
+func (gh *GitHandler) UpdateGitRepo(credentials *GitRepositoryConfig, stage string, service string, version string, configVersion string) error {
 	authentication := &http.BasicAuth{
 		Username: credentials.User,
 		Password: credentials.Token,
@@ -85,7 +85,7 @@ func (gh *GitHandler) UpdateGitRepo(credentials *GitRepositoryConfig, stage stri
 	cloneOptionsMaster := git.CloneOptions{
 		URL:           credentials.RemoteURI,
 		Auth:          authentication,
-		ReferenceName: plumbing.ReferenceName("refs/tags/" + service + "-" + version),
+		ReferenceName: plumbing.ReferenceName("refs/tags/" + service + "-" + version + "-" + configVersion),
 		SingleBranch:  true,
 	}
 
@@ -153,7 +153,7 @@ func (gh *GitHandler) UpdateGitRepo(credentials *GitRepositoryConfig, stage stri
 		log.Println("Could not add files")
 	}
 
-	_, err = w.Commit("Updated to version "+version, &commitOptions)
+	_, err = w.Commit("Updated to version "+version+"-"+configVersion, &commitOptions)
 	if err != nil {
 		log.Println("Couldn't commit "+stage, err)
 		return err

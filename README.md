@@ -4,9 +4,9 @@ The operators in this repository make keptn configurable via Custom Resources an
 ## Compatibility Matrix
 
 | Author           | Keptn Version | [Keptn GitOps Operator Images](https://hub.docker.com/r/checkelmann/gitlab-service/tags) |
-|:-----------------|:---------------------:|:----------------------------------------------------------------------------------------:|
-| @thschue         |      0.11.x         |    keptnsandbox/gitops-operator:0.1.0-dev <br> keptnsandbox/keptn-operator:0.1.0-dev     |
-
+|:-----------------|:-------------:|:----------------------------------------------------------------------------------------:|
+| @thschue         |    0.11.x     |    keptnsandbox/gitops-operator:0.1.0-dev <br> keptnsandbox/keptn-operator:0.1.0-dev     |
+| @thschue         |    0.12.x     |    keptnsandbox/gitops-operator:0.1.0-dev <br> keptnsandbox/keptn-operator:0.1.0-dev     |
 
 ## Prerequisites
 * In order to be able to create and delete stages, the keptn operator depends on a patched version of the configuration-service and the shipyard controller
@@ -30,7 +30,7 @@ Following, a few parameters have to be set upfront:
 export API_HOSTNAME="<hostname>"
 export API_TOKEN="<api-token>"
 export RSA_PRIVATE_KEY="<private-key>"
-export GITOPS_VERSION="0.1.0-pre.6"
+export GITOPS_VERSION="0.1.0-pre.7"
 ```
 
 ### Install Custom Resource Definitions / Create Namespace

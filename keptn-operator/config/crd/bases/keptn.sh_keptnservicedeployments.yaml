@@ -39,6 +39,12 @@ spec:
             properties:
               author:
                 type: string
+              configVersion:
+                type: string
+              labels:
+                additionalProperties:
+                  type: string
+                type: object
               project:
                 description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
                   Important: Run "make" to regenerate code after modifying this file'
@@ -61,6 +67,8 @@ spec:
             description: KeptnServiceDeploymentStatus defines the observed state of
               KeptnServiceDeployment
             properties:
+              deployedConfigVersion:
+                type: string
               deployedVersion:
                 type: string
               keptnContext:

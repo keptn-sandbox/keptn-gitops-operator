@@ -52,6 +52,10 @@ func (eh *PromotionHandler) HandlePromotionTriggeredEvent() error {
 	} else {
 		eh.KeptnHandler.Logger.Info("Using version: " + version)
 	}
+	configVersion, ok := eventData.Labels["configVersion"]
+	if !ok {
+		configVersion = "0"
+	}
 
 	namespaceSupplier := common.EnvBasedStringSupplier(namespaceEnvVarName, defaultNamespace)
 
@@ -66,11 +70,11 @@ func (eh *PromotionHandler) HandlePromotionTriggeredEvent() error {
 		return err
 	}
 
-	err = eh.GitHandler.UpdateGitRepo(mysecret, eventData.Stage, eventData.Service, version)
+	err = eh.GitHandler.UpdateGitRepo(mysecret, eventData.Stage, eventData.Service, version, configVersion)
 	if err != nil {
 		count := 0
 		for err != nil && count <= 5 {
-			err = eh.GitHandler.UpdateGitRepo(mysecret, eventData.Stage, eventData.Service, version)
+			err = eh.GitHandler.UpdateGitRepo(mysecret, eventData.Stage, eventData.Service, version, configVersion)
 			count++
 		}
 		eh.KeptnHandler.Logger.Error(fmt.Sprintf("Could not update service %v/%v for stage %v: %v", eventData.Project, eventData.Service, eventData.Stage, err.Error()))
