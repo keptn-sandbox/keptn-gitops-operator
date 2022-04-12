@@ -1,0 +1,10 @@
+apiVersion: "keptn.sh/v1"
+kind: "KeptnGitRepository"
+metadata:
+  name: "{{ .Project }}"
+spec:
+  repository: "{{ .ConfigRepoUrl }}"
+  username: "{{ .ConfigRepoUsername }}"
+  password: "rsa:{{ .EncConfigRepoToken }}"
+  branch: "{{ .ConfigRepoBranch }}"
+  baseDir: "{{ .ConfigRepoPath }}"

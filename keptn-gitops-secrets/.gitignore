@@ -1,3 +1,4 @@
 keptn-gitops-secrets
 **/*.priv
 **/*.pub
+out/
