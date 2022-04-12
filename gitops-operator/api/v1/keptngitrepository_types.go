@@ -17,7 +17,6 @@ limitations under the License.
 package v1
 
 import (
-	keptnv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -62,14 +61,6 @@ type KeptnGitRepositoryList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []KeptnGitRepository `json:"items"`
-}
-
-type KeptnProject struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   keptnv1.KeptnProjectSpec   `json:"spec,omitempty"`
-	Status keptnv1.KeptnProjectStatus `json:"status,omitempty"`
 }
 
 func init() {
