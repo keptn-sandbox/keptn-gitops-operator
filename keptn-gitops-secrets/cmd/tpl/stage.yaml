@@ -1,0 +1,7 @@
+apiVersion: "keptn.sh/v1"
+kind: "KeptnStage"
+metadata:
+  name: "{{ .Stage}}"
+spec:
+  project: "{{ .Project }}"
+  sequence: []
