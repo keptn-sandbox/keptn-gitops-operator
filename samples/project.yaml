@@ -6,3 +6,7 @@ spec:
   repository: "<UPSTREAM_REPO_URL>"
   username: "<GIT_USERNAME>"
   password: "rsa:<RSA_ENCRYPTED_AND_BASE64_ENCODED_GIT_TOKEN>"
+
+
+
+

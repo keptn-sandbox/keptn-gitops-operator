@@ -1,0 +1,10 @@
+{{ range $service := .Services }}
+apiVersion: "keptn.sh/v1"
+kind: "KeptnService"
+metadata:
+  name: "{{ $service }}"
+spec:
+  project: "{{ $.Project }}"
+  service: "{{ $service }}"
+  deploymentEvent: "{{ $.DeploymentEvent }}.triggered"
+{{ end }}

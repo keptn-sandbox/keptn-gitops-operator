@@ -1,0 +1,4 @@
+apiVersion: keptn.sh/v1
+kind: KeptnArtifactRootMetadata
+spec:
+  project: "{{ . }}"

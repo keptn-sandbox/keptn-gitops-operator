@@ -1,0 +1,6 @@
+apiVersion: keptn.sh/v1
+kind: KeptnArtifactMetadata
+spec:
+  version: "0.0.1"
+  project: "{{ . }}"
+  configVersion: "0"

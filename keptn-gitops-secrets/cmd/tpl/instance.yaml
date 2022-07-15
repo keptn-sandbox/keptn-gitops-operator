@@ -1,0 +1,8 @@
+apiVersion: "keptn.sh/v1"
+kind: "KeptnInstance"
+metadata:
+  name: "default"
+spec:
+  apiUrl: "{{ .ApiUrl }}"
+  tokenType: "{{ .ApiTokenType }}"
+  apiToken: "rsa:{{ .EncToken }}"
