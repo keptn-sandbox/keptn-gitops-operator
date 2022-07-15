@@ -1,4 +1,3 @@
----
 apiVersion: "keptn.sh/v1"
 kind: "KeptnInstance"
 metadata:
@@ -7,14 +6,3 @@ spec:
   apiUrl: "{{ .ApiUrl }}"
   tokenType: "{{ .ApiTokenType }}"
   apiToken: "rsa:{{ .EncToken }}"
-
----
-apiVersion: "keptn.sh/v1"
-kind: "KeptnProject"
-metadata:
-  name: "{{ .Project }}"
-spec:
-  repository: "{{ .UpstreamRepoUrl }}"
-  username: "{{ .UpstreamRepoUsername }}"
-  password: "rsa:{{ .EncUpstreamToken }}"
-  defaultBranch: "{{ .UpstreamRepoBranch }}"

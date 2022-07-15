@@ -1,0 +1,15 @@
+{{ range $stage := .Stages }}
+---
+apiVersion: "keptn.sh/v1"
+kind: "KeptnSequence"
+metadata:
+  name: "{{ $.Project }}-{{ $stage }}"
+spec:
+  sequence:
+    name: "{{ $.DeploymentEvent }}"
+    tasks:
+      - name: "promotion"
+      - name: "deployment"
+        properties:
+          deploymentstrategy: "user_managed"
+{{ end }}

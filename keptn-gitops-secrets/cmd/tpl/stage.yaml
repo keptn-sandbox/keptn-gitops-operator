@@ -1,7 +1,12 @@
+{{ range $stage := .Stages }}
+---
 apiVersion: "keptn.sh/v1"
 kind: "KeptnStage"
 metadata:
-  name: "{{ .Stage}}"
+  name: "{{ $stage }}"
 spec:
-  project: "{{ .Project }}"
-  sequence: []
+  project: "{{ $.Project }}"
+  sequence:
+    - type: "sequenceref"
+      sequenceRef: "{{ $.Project }}-{{ $stage }}"
+{{ end }}
