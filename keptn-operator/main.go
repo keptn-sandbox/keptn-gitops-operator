@@ -22,8 +22,9 @@ package main
 
 import (
 	"flag"
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptninstancecontroller"
 	"os"
+
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptninstancecontroller"
 
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnprojectcontroller"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnscheduledexeccontroller"
@@ -47,6 +48,7 @@ import (
 
 	keptnshv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
 	keptnv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -161,6 +163,13 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KeptnInstance")
+		os.Exit(1)
+	}
+	if err = (&controllers.KeptnServiceLevelIndicatorReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "KeptnServiceLevelIndicator")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
