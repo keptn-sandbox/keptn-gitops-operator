@@ -1,0 +1,24 @@
+# permissions for end users to edit keptnservicelevelindicators.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keptnservicelevelindicator-editor-role
+rules:
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservicelevelindicators
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservicelevelindicators/status
+  verbs:
+  - get

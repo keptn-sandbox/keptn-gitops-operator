@@ -10,4 +10,5 @@ resources:
 - _v1_keptnservicedeployment.yaml
 - _v1_keptndeploymentcontext.yaml
 - _v1_keptninstance.yaml
+- _v1_keptnservicelevelindicator.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

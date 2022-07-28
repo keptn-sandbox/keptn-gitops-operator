@@ -1,0 +1,6 @@
+apiVersion: keptn.sh/v1
+kind: KeptnServiceLevelIndicator
+metadata:
+  name: keptnservicelevelindicator-sample
+spec:
+  # TODO(user): Add fields here

@@ -239,6 +239,32 @@ rules:
 - apiGroups:
   - keptn.sh
   resources:
+  - keptnservicelevelindicators
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservicelevelindicators/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
+  - keptnservicelevelindicators/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - keptn.sh
+  resources:
   - keptnservices
   verbs:
   - create

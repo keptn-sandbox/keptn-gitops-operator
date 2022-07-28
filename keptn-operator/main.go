@@ -22,15 +22,16 @@ package main
 
 import (
 	"flag"
-	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptninstancecontroller"
 	"os"
 
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptninstancecontroller"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnprojectcontroller"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnscheduledexeccontroller"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnsequencecontroller"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnsequenceexecutioncontroller"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnservicecontroller"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnservicedeploymentcontroller"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnservicelevelindicatorcontroller"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnshipyardcontroller"
 	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/controllers/keptnstagecontroller"
 
@@ -161,6 +162,13 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KeptnInstance")
+		os.Exit(1)
+	}
+	if err = (&keptnservicelevelindicatorcontroller.KeptnServiceLevelIndicatorReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "KeptnServiceLevelIndicator")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
