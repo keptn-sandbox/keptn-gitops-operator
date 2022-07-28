@@ -42,12 +42,19 @@ spec:
                 additionalProperties:
                   type: string
                 type: object
-              provider:
+              project:
                 description: Foo is an example field of KeptnServiceLevelIndicator.
                   Edit keptnservicelevelindicator_types.go to remove/update
                 type: string
+              provider:
+                type: string
+              service:
+                type: string
+              stage:
+                type: string
             required:
             - indicators
+            - project
             - provider
             type: object
           status:

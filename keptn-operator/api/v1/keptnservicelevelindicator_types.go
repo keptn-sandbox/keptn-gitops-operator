@@ -29,6 +29,10 @@ type KeptnServiceLevelIndicatorSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of KeptnServiceLevelIndicator. Edit keptnservicelevelindicator_types.go to remove/update
+	Project string `json:"project"`
+	Stage   string `json:"stage,omitempty"`
+	Service string `json:"service,omitempty"`
+
 	Provider   string            `json:"provider"`
 	Indicators map[string]string `json:"indicators"`
 }
