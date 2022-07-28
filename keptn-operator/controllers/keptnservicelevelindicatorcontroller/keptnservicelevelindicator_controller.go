@@ -18,11 +18,18 @@ package keptnservicelevelindicatorcontroller
 
 import (
 	"context"
+	"github.com/go-logr/logr"
+	"github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/pkg/utils"
 
+	apiv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
+	// "github.com/keptn/go-utils/pkg/api/models"
+	// apiutils "github.com/keptn/go-utils/pkg/api/utils"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
+	"time"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	keptnshv1 "github.com/keptn-sandbox/keptn-gitops-operator/keptn-operator/api/v1"
 )
@@ -30,8 +37,20 @@ import (
 // KeptnServiceLevelIndicatorReconciler reconciles a KeptnServiceLevelIndicator object
 type KeptnServiceLevelIndicatorReconciler struct {
 	client.Client
+
+	// Scheme contains the scheme of this controller
 	Scheme *runtime.Scheme
+	// Recorder contains the Recorder of this controller
+	Recorder record.EventRecorder
+	// ReqLogger contains the Logger of this controller
+	ReqLogger logr.Logger
+	// KeptnInstance contains the Information about the KeptnInstance of this controller
+	KeptnInstance apiv1.KeptnInstance
+	// KeptnAPIToken contains the API token used in this controller
+	KeptnAPIToken string
 }
+
+const reconcileErrorInterval = 10 * time.Second
 
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnservicelevelindicators,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=keptn.sh,resources=keptnservicelevelindicators/status,verbs=get;update;patch
@@ -47,9 +66,35 @@ type KeptnServiceLevelIndicatorReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.2/pkg/reconcile
 func (r *KeptnServiceLevelIndicatorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	r.ReqLogger = ctrl.Log.WithValues("Request.Namespace", req.Namespace, "Request.Name", req.Name)
+	r.ReqLogger.Info("Reconciling KeptnServiceLevelIndicator")
 
-	// TODO(user): your logic here
+	var err error
+	r.KeptnInstance, r.KeptnAPIToken, err = utils.GetKeptnInstance(ctx, r.Client, req.Namespace)
+	if err != nil {
+		r.ReqLogger.Error(err, "Could not get Keptn Instance")
+		return ctrl.Result{Requeue: true, RequeueAfter: reconcileErrorInterval}, nil
+	}
+
+	ksli := &apiv1.KeptnServiceLevelIndicator{}
+
+	if ksli.Spec.Project == "" {
+		r.ReqLogger.Error(err, "Could not apply service level indicators as the project is not specified")
+		return ctrl.Result{}, nil
+	}
+
+	// resourceHandler := apiutils.NewAuthenticatedResourceHandler(r.KeptnInstance.Spec.APIUrl, r.KeptnAPIToken, r.KeptnInstance.Status.AuthHeader, nil, r.KeptnInstance.Status.Scheme)
+
+	if ksli.Spec.Service != "" {
+		if ksli.Spec.Stage == "" {
+			r.ReqLogger.Error(err, "Could not apply service level indicators to the %s service as the stage is not specified", ksli.Spec.Service)
+			return ctrl.Result{}, nil
+		}
+	} else if ksli.Spec.Stage != "" {
+		// apply sli to all services of stage but NOT to rest of project
+	}
+
+	// apply sli to all services of all stages
 
 	return ctrl.Result{}, nil
 }
