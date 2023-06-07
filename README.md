@@ -1,3 +1,5 @@
+# > Interested in Gitops for Keptn? We suggest using the [Keptn Lifecycle Toolkit](https://lifecycle.keptn.sh/) instead.
+
 # Keptn GitOps Operators
 The operators in this repository make keptn configurable via Custom Resources and via git.
 
